@@ -55,6 +55,12 @@ Deno.serve(async (req) => {
       : planRow.stripe_monthly_price_id;
     if (!price) throw new Error("Price unavailable");
 
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
+    if (!stripeKey) throw new Error("Stripe secret key is not configured");
+    if (stripeKey.startsWith("sk_live_")) {
+      throw new Error("Billing mode mismatch: DotCo currently has test-mode Stripe prices, but Supabase is using a live Stripe key. Use the sk_test_ key while testing, or replace the database price IDs with live-mode prices before launch.");
+    }
+
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -90,14 +96,20 @@ Deno.serve(async (req) => {
     const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${Deno.env.get("STRIPE_SECRET_KEY")}`,
+        Authorization: `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: params,
     });
 
     const result = await stripeResponse.json();
-    if (!stripeResponse.ok) throw new Error(result.error?.message || "Stripe error");
+    if (!stripeResponse.ok) {
+      const message = result.error?.message || "Stripe error";
+      if (/similar object exists in test mode|No such price/i.test(message)) {
+        throw new Error("Billing mode mismatch: DotCo currently has test-mode Stripe prices. Use the sk_test_ key while testing, or add live-mode prices before launch.");
+      }
+      throw new Error(message);
+    }
 
     return new Response(JSON.stringify({ url: result.url }), {
       headers: { ...cors, "Content-Type": "application/json" },
