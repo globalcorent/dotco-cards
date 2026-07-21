@@ -1,1 +1,105 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#13162a"><title>Dashboard | DotCo Cards</title><link rel="stylesheet" href="css/styles.css?v=20260721-6"></head><body><div class="dashboard"><aside class="sidebar" id="sidebar"><a class="brand" href="dashboard.html"><span class="brand-mark">DC</span> DotCo <span>Cards</span></a><span class="sidebar-label">Workspace</span><nav><a class="active" href="dashboard.html"><i data-lucide="layout-dashboard" size="18"></i> Overview</a><a href="editor.html"><i data-lucide="badge-plus" size="18"></i> Create card</a><a href="pricing.html"><i data-lucide="credit-card" size="18"></i> Plans & billing</a></nav><span class="sidebar-label">Account</span><nav><button onclick="openPortal()"><i data-lucide="receipt-text" size="18"></i> Manage billing</button><button onclick="logout()"><i data-lucide="log-out" size="18"></i> Log out</button></nav><div class="sidebar-footer"><div class="sidebar-plan"><strong id="sidebar-plan">Starter preview</strong><small id="sidebar-plan-copy">Activate a plan to publish.</small><a href="pricing.html" class="btn btn-primary btn-sm" style="width:100%;margin-top:12px">View plans</a></div></div></aside><main class="main"><div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="mobile-sidebar-toggle icon-btn" id="sidebar-toggle" aria-label="Open navigation"><i data-lucide="menu"></i></button><div><h1 id="welcome">Welcome back</h1><p class="muted" id="user-email"></p></div></div><div class="topbar-actions"><a class="btn btn-primary" href="editor.html"><i data-lucide="plus" size="18"></i><span>New card</span></a><div class="user-chip" id="user-chip">U</div></div></div><section class="grid stats"><article class="card stat"><div class="stat-label"><span>Current plan</span><span class="stat-icon"><i data-lucide="gem" size="18"></i></span></div><strong id="plan">—</strong><small class="muted" id="plan-status">Loading</small></article><article class="card stat"><div class="stat-label"><span>Cards created</span><span class="stat-icon"><i data-lucide="contact-round" size="18"></i></span></div><strong id="card-count">0</strong><small class="muted" id="card-usage">0 available</small></article><article class="card stat"><div class="stat-label"><span>Total views</span><span class="stat-icon"><i data-lucide="eye" size="18"></i></span></div><strong id="views">0</strong><small class="muted">Across your cards</small></article><article class="card stat"><div class="stat-label"><span>Contact saves</span><span class="stat-icon"><i data-lucide="user-round-plus" size="18"></i></span></div><strong id="saves">0</strong><small class="muted">People who saved you</small></article></section><div class="dashboard-grid"><section class="card onboarding"><div class="onboarding-head"><div><span class="eyebrow">Quick start</span><h2 style="margin:12px 0 5px">Get your first card working</h2><p class="muted">Complete these steps to start sharing professionally.</p></div><strong id="onboarding-percent">25%</strong></div><div class="progress"><span id="onboarding-progress" style="width:25%"></span></div><div class="checklist"><div class="check-item done" id="step-account"><span class="check-dot"><i data-lucide="check" size="14"></i></span> Account verified</div><div class="check-item" id="step-card"><span class="check-dot"></span> Create your first card</div><div class="check-item" id="step-plan"><span class="check-dot"></span> Activate a publishing plan</div><div class="check-item" id="step-published"><span class="check-dot"></span> Publish and share your card</div></div></section><aside class="card" id="usage-card"><span class="eyebrow">Plan usage</span><div class="usage-number"><span id="usage-count">0</span>/<span id="usage-limit">1</span></div><p class="usage-caption">cards used on your current plan</p><div class="progress"><span id="usage-progress" style="width:0%"></span></div><a href="pricing.html" class="btn btn-light btn-block">Compare plans</a></aside></div><section style="margin-top:30px"><div class="section-title"><div><h2>My cards</h2><p class="muted" style="margin:3px 0 0">Manage, preview, and share your digital cards.</p></div><a class="btn btn-light btn-sm" href="editor.html"><i data-lucide="plus" size="16"></i> Add card</a></div><div id="card-list" class="card-list"></div></section><section class="card upgrade-card" id="upgrade-banner" style="margin-top:24px"><div class="section-title" style="margin:0"><div><span class="eyebrow">Publish when ready</span><h2 style="margin:12px 0 5px">Your design can be free. Your public card needs a plan.</h2><p>Activate Starter, Pro, or Agency when you are ready for customers to access your card.</p></div><a class="btn btn-primary" href="pricing.html">Choose a plan</a></div></section></main></div><div id="toast" class="toast"></div><script src="https://unpkg.com/lucide@latest"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js?v=20260721-6"></script><script src="js/common.js?v=20260721-6"></script><script src="js/billing.js?v=20260721-6"></script><script src="js/dashboard.js?v=20260721-6"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#13162a">
+  <meta name="description" content="Manage DotCo digital business cards, analytics, leads, and add-ons.">
+  <title>Dashboard | DotCo Cards</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260722-1">
+</head>
+<body>
+<div class="dashboard">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="dashboard.html"><span class="brand-mark">DC</span> DotCo <span>Cards</span></a>
+    <span class="sidebar-label">Workspace</span>
+    <nav>
+      <a class="active" href="dashboard.html"><i data-lucide="layout-dashboard" size="18"></i> Overview</a>
+      <a href="editor.html"><i data-lucide="badge-plus" size="18"></i> Create card</a>
+      <a href="analytics.html"><i data-lucide="chart-no-axes-combined" size="18"></i> Analytics</a>
+      <a href="leads.html"><i data-lucide="inbox" size="18"></i> Leads <span class="nav-count" id="nav-lead-count" hidden>0</span></a>
+      <a href="addons.html"><i data-lucide="blocks" size="18"></i> Add-ons</a>
+      <a href="pricing.html"><i data-lucide="credit-card" size="18"></i> Plans & billing</a>
+    </nav>
+    <span class="sidebar-label">Account</span>
+    <nav>
+      <button onclick="openPortal()"><i data-lucide="receipt-text" size="18"></i> Manage billing</button>
+      <button onclick="logout()"><i data-lucide="log-out" size="18"></i> Log out</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-plan">
+        <strong id="sidebar-plan">Loading plan…</strong>
+        <small id="sidebar-plan-copy">Checking your subscription.</small>
+        <a href="addons.html" class="btn btn-primary btn-sm" style="width:100%;margin-top:12px">Explore add-ons</a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="mobile-sidebar-toggle icon-btn" id="sidebar-toggle" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+        <div><h1 id="welcome">Welcome back</h1><p class="muted" id="user-email"></p></div>
+      </div>
+      <div class="topbar-actions"><a class="btn btn-primary" href="editor.html"><i data-lucide="plus" size="18"></i><span>New card</span></a><div class="user-chip" id="user-chip">U</div></div>
+    </div>
+
+    <section class="dashboard-welcome card" id="dashboard-welcome">
+      <div>
+        <span class="eyebrow">Your digital presence</span>
+        <h2 id="welcome-headline">Build, publish, and grow from one place.</h2>
+        <p id="welcome-copy">Keep your cards current, watch engagement, and add tools when your business needs them.</p>
+        <div class="welcome-actions"><a class="btn btn-primary" href="editor.html"><i data-lucide="wand-sparkles" size="17"></i> Build a card</a><a class="btn btn-light" href="addons.html"><i data-lucide="blocks" size="17"></i> Browse add-ons</a></div>
+      </div>
+      <div class="welcome-plan-badge"><span id="plan">—</span><small id="plan-status">Loading</small><strong id="renewal-date">—</strong></div>
+    </section>
+
+    <section class="grid stats dashboard-stats">
+      <article class="card stat"><div class="stat-label"><span>Cards created</span><span class="stat-icon"><i data-lucide="contact-round" size="18"></i></span></div><strong id="card-count">0</strong><small class="muted" id="card-usage">0 available</small></article>
+      <article class="card stat"><div class="stat-label"><span>Total views</span><span class="stat-icon"><i data-lucide="eye" size="18"></i></span></div><strong id="views">0</strong><small class="muted">Across your cards</small></article>
+      <article class="card stat"><div class="stat-label"><span>Contact saves</span><span class="stat-icon"><i data-lucide="user-round-plus" size="18"></i></span></div><strong id="saves">0</strong><small class="muted">People who saved you</small></article>
+      <article class="card stat"><div class="stat-label"><span>New leads</span><span class="stat-icon"><i data-lucide="inbox" size="18"></i></span></div><strong id="new-leads">0</strong><small class="muted">Waiting for follow-up</small></article>
+      <article class="card stat"><div class="stat-label"><span>Active add-ons</span><span class="stat-icon"><i data-lucide="sparkles" size="18"></i></span></div><strong id="addon-count">0</strong><small class="muted">Paid enhancements</small></article>
+    </section>
+
+    <div class="dashboard-grid">
+      <section class="card onboarding">
+        <div class="onboarding-head"><div><span class="eyebrow">Quick start</span><h2 style="margin:12px 0 5px">Get your card customer-ready</h2><p class="muted">Complete these steps to start sharing professionally.</p></div><strong id="onboarding-percent">25%</strong></div>
+        <div class="progress"><span id="onboarding-progress" style="width:25%"></span></div>
+        <div class="checklist"><div class="check-item done" id="step-account"><span class="check-dot"><i data-lucide="check" size="14"></i></span> Account verified</div><div class="check-item" id="step-card"><span class="check-dot"></span> Create your first card</div><div class="check-item" id="step-plan"><span class="check-dot"></span> Activate a publishing plan</div><div class="check-item" id="step-published"><span class="check-dot"></span> Publish and share your card</div></div>
+      </section>
+      <aside class="card usage-addon-card">
+        <span class="eyebrow">Workspace capacity</span>
+        <div class="usage-number"><span id="usage-count">0</span>/<span id="usage-limit">1</span></div>
+        <p class="usage-caption">cards used on your current plan and add-ons</p>
+        <div class="progress"><span id="usage-progress" style="width:0%"></span></div>
+        <div id="dashboard-addon-chips" class="dashboard-addon-chips"></div>
+        <a href="addons.html" class="btn btn-light btn-block">Manage add-ons</a>
+      </aside>
+    </div>
+
+    <section style="margin-top:30px">
+      <div class="section-title"><div><h2>My cards</h2><p class="muted" style="margin:3px 0 0">Manage, preview, publish, and share your digital cards.</p></div><a class="btn btn-light btn-sm" href="editor.html"><i data-lucide="plus" size="16"></i> Add card</a></div>
+      <div id="card-list" class="card-list"></div>
+    </section>
+
+    <section class="dashboard-tool-grid">
+      <a class="card dashboard-tool" href="analytics.html"><span><i data-lucide="chart-no-axes-combined"></i></span><div><strong>Understand engagement</strong><p>See views, saves, actions, devices, and top-performing cards.</p></div><i data-lucide="arrow-right"></i></a>
+      <a class="card dashboard-tool" href="leads.html"><span><i data-lucide="inbox"></i></span><div><strong>Follow up with leads</strong><p>Manage inquiries submitted from customer-facing cards.</p></div><i data-lucide="arrow-right"></i></a>
+      <a class="card dashboard-tool" href="addons.html"><span><i data-lucide="blocks"></i></span><div><strong>Expand your cards</strong><p>Add booking, products, custom domains, extra cards, and more.</p></div><i data-lucide="arrow-right"></i></a>
+    </section>
+
+    <section class="card upgrade-card" id="upgrade-banner" style="margin-top:24px">
+      <div class="section-title" style="margin:0"><div><span class="eyebrow">Publish when ready</span><h2 style="margin:12px 0 5px">Your design can be free. Your public card needs a plan.</h2><p>Activate Starter, Pro, or Agency when you are ready for customers to access your card.</p></div><a class="btn btn-primary" href="pricing.html">Choose a plan</a></div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast"></div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js?v=20260722-1"></script>
+<script src="js/common.js?v=20260722-1"></script>
+<script src="js/billing.js?v=20260722-1"></script>
+<script src="js/dashboard.js?v=20260722-1"></script>
+</body>
+</html>

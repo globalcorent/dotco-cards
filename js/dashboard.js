@@ -1,2 +1,133 @@
-(async()=>{const user=await requireUser();if(!user)return;const [{data:profile},{data:sub},{data:cards,error:cardsError},{count:viewCount},{count:saveCount}]=await Promise.all([supabaseClient.from('profiles').select('full_name').eq('id',user.id).maybeSingle(),supabaseClient.from('subscriptions').select('plan_key,status,current_period_end').eq('user_id',user.id).maybeSingle(),supabaseClient.from('digital_cards').select('*').order('updated_at',{ascending:false}),supabaseClient.from('card_views').select('id',{count:'exact',head:true}),supabaseClient.from('card_events').select('id',{count:'exact',head:true}).eq('event_type','contact_save')]);if(cardsError)toast(cardsError.message);const planKey=sub?.plan_key||'starter';const {data:planDef}=await supabaseClient.from('plan_definitions').select('name,card_limit').eq('plan_key',planKey).maybeSingle();const active=['active','trialing','past_due'].includes(sub?.status);const name=profile?.full_name||user.user_metadata?.full_name||'';const firstName=name.trim().split(' ')[0]||'there';document.getElementById('welcome').textContent=`Welcome back, ${firstName}`;document.getElementById('user-email').textContent=user.email;document.getElementById('user-chip').textContent=firstName.slice(0,1).toUpperCase();document.getElementById('plan').textContent=planDef?.name||'Starter';document.getElementById('plan-status').textContent=active?(sub.status==='past_due'?'Payment needs attention':sub.status==='trialing'?'Trial active':'Subscription active'):'Preview mode';document.getElementById('sidebar-plan').textContent=active?`${planDef?.name||'Starter'} plan`:'Starter preview';document.getElementById('sidebar-plan-copy').textContent=active?'Your cards can be published.':'Activate a plan to publish.';const cardCount=cards?.length||0;const limit=planDef?.card_limit||1;document.getElementById('card-count').textContent=cardCount;document.getElementById('card-usage').textContent=`${Math.max(limit-cardCount,0)} remaining`;document.getElementById('views').textContent=viewCount||0;document.getElementById('saves').textContent=saveCount||0;document.getElementById('usage-count').textContent=cardCount;document.getElementById('usage-limit').textContent=limit;document.getElementById('usage-progress').style.width=`${Math.min(100,cardCount/limit*100)}%`;const published=cards?.some(c=>c.status==='published');const complete=[true,cardCount>0,active,published];['step-account','step-card','step-plan','step-published'].forEach((id,index)=>{if(complete[index]){const el=document.getElementById(id);el.classList.add('done');el.querySelector('.check-dot').innerHTML='<i data-lucide="check" size="14"></i>'}});const percent=Math.round(complete.filter(Boolean).length/complete.length*100);document.getElementById('onboarding-percent').textContent=`${percent}%`;document.getElementById('onboarding-progress').style.width=`${percent}%`;if(active)document.getElementById('upgrade-banner').hidden=true;renderCards(cards||[]);document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));if(window.lucide)lucide.createIcons()})();
-function renderCards(cards){const list=document.getElementById('card-list');if(!cards.length){list.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon"><i data-lucide="badge-plus" size="28"></i></span><h3>Create your first digital card</h3><p class="muted">Add your details, choose a style, and see exactly what customers will experience.</p><a class="btn btn-primary" href="editor.html">Start building</a></div>`;if(window.lucide)lucide.createIcons();return}list.innerHTML=cards.map(c=>{const publicUrl=dotcoUrl(`card.html?slug=${encodeURIComponent(c.slug)}`);const initials=(c.full_name||'DC').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();const avatar=c.profile_image_url?`<img src="${escapeHtml(c.profile_image_url)}" alt="">`:initials;return `<article class="card card-item"><div class="card-thumb" style="background:${escapeHtml(c.gradient_background||`linear-gradient(135deg,${c.primary_color||'#5b5cf0'},${c.secondary_color||'#9b5de5'})`)}"><span class="card-initials">${avatar}</span><span class="card-thumb-name">${escapeHtml(c.full_name||'Untitled card')}</span></div><div class="card-meta"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3>${escapeHtml(c.company_name||c.full_name||'Untitled card')}</h3><p class="muted" style="font-size:.86rem;margin-bottom:0">${escapeHtml(c.job_title||'Add a job title')}</p></div><span class="status-pill ${c.status}">${c.status}</span></div><div class="card-actions"><a class="btn btn-light btn-sm" href="editor.html?id=${c.id}"><i data-lucide="pencil" size="15"></i> Edit</a><a class="btn btn-light btn-sm" href="${publicUrl}" target="_blank"><i data-lucide="eye" size="15"></i> ${c.status==='published'?'View':'Preview'}</a><button class="btn btn-light btn-sm" data-copy="${publicUrl}"><i data-lucide="copy" size="15"></i></button></div></div></article>`}).join('');list.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',async()=>{await navigator.clipboard.writeText(button.dataset.copy);toast('Card link copied')}));if(window.lucide)lucide.createIcons()}
+(async function initDashboard() {
+  const user = await requireUser();
+  if (!user) return;
+
+  const [profileResult, subResult, cardsResult, viewsResult, savesResult, addonsResult, definitionsResult, leadsResult] = await Promise.all([
+    supabaseClient.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+    supabaseClient.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
+    supabaseClient.from('digital_cards').select('*').order('updated_at', { ascending: false }),
+    supabaseClient.from('card_views').select('id', { count: 'exact', head: true }),
+    supabaseClient.from('card_events').select('id', { count: 'exact', head: true }).eq('event_type', 'contact_save'),
+    supabaseClient.from('subscription_addons').select('*').eq('user_id', user.id),
+    supabaseClient.from('addon_definitions').select('addon_key,name,included_plans,icon').eq('is_active', true).order('sort_order'),
+    supabaseClient.from('leads').select('id', { count: 'exact', head: true }).eq('owner_user_id', user.id).eq('status', 'new')
+  ]);
+
+  const profile = profileResult.data;
+  const subscription = subResult.data;
+  const cards = cardsResult.data || [];
+  const addons = addonsResult.data || [];
+  const definitions = definitionsResult.data || [];
+  if (cardsResult.error) toast(cardsResult.error.message);
+
+  const planKey = subscription?.plan_key || 'starter';
+  const { data: planDefinition } = await supabaseClient.from('plan_definitions')
+    .select('name,card_limit')
+    .eq('plan_key', planKey)
+    .maybeSingle();
+
+  const active = ['active', 'trialing', 'past_due'].includes(subscription?.status);
+  const name = profile?.full_name || user.user_metadata?.full_name || '';
+  const firstName = name.trim().split(' ')[0] || 'there';
+  const paidAddons = addons.filter(row => ['active', 'trialing', 'past_due'].includes(row.status));
+  const extraCards = paidAddons.find(row => row.addon_key === 'extra_card')?.quantity || 0;
+  const baseLimit = planDefinition?.card_limit || 1;
+  const limit = baseLimit + Number(extraCards || 0);
+  const cardCount = cards.length;
+  const published = cards.some(card => card.status === 'published');
+  const newLeadCount = leadsResult.count || 0;
+
+  document.getElementById('welcome').textContent = `Welcome back, ${firstName}`;
+  document.getElementById('user-email').textContent = user.email;
+  document.getElementById('user-chip').textContent = firstName.slice(0, 1).toUpperCase();
+  document.getElementById('plan').textContent = planDefinition?.name || 'Starter';
+  document.getElementById('plan-status').textContent = active
+    ? subscription.status === 'past_due' ? 'Payment needs attention' : subscription.status === 'trialing' ? 'Trial active' : 'Subscription active'
+    : 'Preview mode';
+  document.getElementById('renewal-date').textContent = active && subscription.current_period_end
+    ? `Renews ${new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    : 'No active renewal';
+  document.getElementById('sidebar-plan').textContent = active ? `${planDefinition?.name || 'Starter'} plan` : 'Starter preview';
+  document.getElementById('sidebar-plan-copy').textContent = active
+    ? `${subscription.billing_interval === 'year' ? 'Yearly' : 'Monthly'} billing · ${paidAddons.length} paid add-on${paidAddons.length === 1 ? '' : 's'}.`
+    : 'Activate a plan to publish.';
+
+  document.getElementById('card-count').textContent = String(cardCount);
+  document.getElementById('card-usage').textContent = `${Math.max(limit - cardCount, 0)} remaining`;
+  document.getElementById('views').textContent = String(viewsResult.count || 0);
+  document.getElementById('saves').textContent = String(savesResult.count || 0);
+  document.getElementById('new-leads').textContent = String(newLeadCount);
+  document.getElementById('addon-count').textContent = String(paidAddons.length);
+  document.getElementById('usage-count').textContent = String(cardCount);
+  document.getElementById('usage-limit').textContent = String(limit);
+  document.getElementById('usage-progress').style.width = `${Math.min(100, cardCount / Math.max(1, limit) * 100)}%`;
+
+  const navLead = document.getElementById('nav-lead-count');
+  if (newLeadCount) {
+    navLead.hidden = false;
+    navLead.textContent = newLeadCount > 99 ? '99+' : String(newLeadCount);
+  }
+
+  const complete = [true, cardCount > 0, active, published];
+  ['step-account', 'step-card', 'step-plan', 'step-published'].forEach((id, index) => {
+    if (complete[index]) {
+      const element = document.getElementById(id);
+      element.classList.add('done');
+      element.querySelector('.check-dot').innerHTML = '<i data-lucide="check" size="14"></i>';
+    }
+  });
+  const percent = Math.round(complete.filter(Boolean).length / complete.length * 100);
+  document.getElementById('onboarding-percent').textContent = `${percent}%`;
+  document.getElementById('onboarding-progress').style.width = `${percent}%`;
+  document.getElementById('upgrade-banner').hidden = active;
+
+  const includedDefinitions = definitions.filter(def => def.included_plans?.includes(planKey));
+  const activeDefinitions = paidAddons.map(row => definitions.find(def => def.addon_key === row.addon_key)).filter(Boolean);
+  const uniqueFeatures = [...includedDefinitions, ...activeDefinitions].filter((feature, index, list) => list.findIndex(item => item.addon_key === feature.addon_key) === index);
+  const addonChipArea = document.getElementById('dashboard-addon-chips');
+  addonChipArea.innerHTML = uniqueFeatures.length
+    ? uniqueFeatures.slice(0, 4).map(feature => `<span><i data-lucide="${escapeHtml(feature.icon || 'sparkles')}" size="14"></i>${escapeHtml(feature.name)}</span>`).join('')
+    : '<p class="muted" style="font-size:.86rem;margin:0">No add-ons active yet.</p>';
+
+  if (active && !published) {
+    document.getElementById('welcome-headline').textContent = 'Your plan is active—publish your first card.';
+    document.getElementById('welcome-copy').textContent = 'Finish the details, preview the customer experience, and publish when everything looks right.';
+  } else if (published) {
+    document.getElementById('welcome-headline').textContent = 'Your digital presence is live.';
+    document.getElementById('welcome-copy').textContent = 'Keep your cards fresh, follow engagement, and use add-ons to turn more visitors into customers.';
+  }
+
+  renderCards(cards);
+  document.getElementById('sidebar-toggle')?.addEventListener('click', () => document.getElementById('sidebar')?.classList.toggle('open'));
+  if (window.lucide) lucide.createIcons();
+})();
+
+function renderCards(cards) {
+  const list = document.getElementById('card-list');
+  if (!cards.length) {
+    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon"><i data-lucide="badge-plus" size="28"></i></span><h3>Create your first digital card</h3><p class="muted">Add your details, choose a style, connect social media, and preview the exact customer experience.</p><a class="btn btn-primary" href="editor.html">Start building</a></div>`;
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  list.innerHTML = cards.map(card => {
+    const publicUrl = dotcoUrl(`card.html?slug=${encodeURIComponent(card.slug)}`);
+    const initials = (card.full_name || 'DC').split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase();
+    const avatar = card.profile_image_url ? `<img src="${escapeHtml(card.profile_image_url)}" alt="">` : escapeHtml(initials);
+    return `<article class="card card-item">
+      <div class="card-thumb" style="background:${escapeHtml(card.gradient_background || `linear-gradient(135deg,${card.primary_color || '#5b5cf0'},${card.secondary_color || '#9b5de5'})`)}">
+        <span class="card-initials">${avatar}</span><span class="card-thumb-name">${escapeHtml(card.full_name || 'Untitled card')}</span>
+      </div>
+      <div class="card-meta">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3>${escapeHtml(card.company_name || card.full_name || 'Untitled card')}</h3><p class="muted" style="font-size:.86rem;margin-bottom:0">${escapeHtml(card.job_title || 'Add a job title')}</p></div><span class="status-pill ${card.status}">${card.status}</span></div>
+        <div class="card-actions"><a class="btn btn-light btn-sm" href="editor.html?id=${card.id}"><i data-lucide="pencil" size="15"></i> Edit</a><a class="btn btn-light btn-sm" href="${publicUrl}" target="_blank"><i data-lucide="eye" size="15"></i> ${card.status === 'published' ? 'View' : 'Preview'}</a><button class="btn btn-light btn-sm" data-copy="${publicUrl}" aria-label="Copy link"><i data-lucide="copy" size="15"></i></button></div>
+      </div>
+    </article>`;
+  }).join('');
+
+  list.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(button.dataset.copy);
+    toast('Card link copied');
+  }));
+  if (window.lucide) lucide.createIcons();
+}

@@ -1,1 +1,94 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#5b5cf0"><meta name="description" content="Digital business card"><title>DotCo Card</title><link rel="stylesheet" href="css/styles.css?v=20260721-6"><style>.preview-banner{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;background:#fff7d6;color:#6b5200;font-weight:700;font-size:.86rem;border-bottom:1px solid #f0dc82}.preview-banner[hidden]{display:none}</style></head><body class="public-body"><main class="public-shell"><div id="loading" class="public-loading"><div class="skeleton" style="height:130px;margin-bottom:55px"></div><div class="skeleton" style="width:120px;height:120px;border-radius:50%;margin:-115px auto 22px"></div><div class="skeleton" style="height:28px;width:65%;margin:0 auto 12px"></div><div class="skeleton" style="height:18px;width:42%;margin:0 auto"></div></div><article id="card" class="public-card" hidden><div id="preview-banner" class="preview-banner" hidden><i data-lucide="eye" size="16"></i><span>Private draft preview — only you can see this.</span></div><div class="public-cover" id="public-cover"><div class="public-cover-pattern"></div><div class="public-top-actions"><button class="public-round-btn" id="share-top" aria-label="Share card"><i data-lucide="share-2" size="19"></i></button><button class="public-round-btn" id="qr-top" aria-label="Show QR code"><i data-lucide="qr-code" size="19"></i></button></div><div class="public-avatar" id="avatar"><span id="avatar-initials">DC</span></div></div><div class="public-content"><h1 id="name"></h1><p class="public-title" id="title"></p><p class="public-company" id="company"></p><p class="public-headline" id="headline"></p><p class="public-bio" id="bio"></p><div class="action-grid" id="actions"></div><button class="primary-card-cta" id="save"><i data-lucide="user-round-plus" size="19"></i> Save to contacts</button><section class="public-section" id="social-section" hidden><h2>Connect with me</h2><div class="public-socials" id="socials"></div></section><p class="public-branding" id="branding">Powered by DotCo Cards</p></div></article></main><button class="btn btn-primary sticky-contact" id="sticky-save" hidden><i data-lucide="contact-round" size="19"></i> Save contact</button><dialog id="qr-dialog"><div class="modal-body"><div class="modal-head"><div><h2 style="margin:0">Scan to connect</h2><p class="muted" style="margin:4px 0 0">Open this card on another phone.</p></div><button class="icon-btn" id="close-qr"><i data-lucide="x"></i></button></div><div class="qr-frame"><img id="qr" width="240" height="240" alt="QR code"></div><button class="btn btn-light btn-block" id="copy-link"><i data-lucide="copy" size="17"></i> Copy card link</button></div></dialog><div id="toast" class="toast"></div><script src="https://unpkg.com/lucide@latest"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js?v=20260721-6"></script><script src="js/common.js?v=20260721-6"></script><script src="js/public-card.js?v=20260721-6"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#5b5cf0">
+  <meta name="description" content="Digital business card">
+  <title>DotCo Card</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260722-1">
+  
+</head>
+<body class="public-body">
+<main class="public-shell">
+  <div id="loading" class="public-loading">
+    <div class="skeleton" style="height:130px;margin-bottom:55px"></div>
+    <div class="skeleton" style="width:120px;height:120px;border-radius:50%;margin:-115px auto 22px"></div>
+    <div class="skeleton" style="height:28px;width:65%;margin:0 auto 12px"></div>
+    <div class="skeleton" style="height:18px;width:42%;margin:0 auto"></div>
+  </div>
+
+  <article id="card" class="public-card" hidden>
+    <div id="preview-banner" class="preview-banner" hidden><i data-lucide="eye" size="16"></i><span>Private draft preview — only you can see this.</span></div>
+    <div class="public-cover" id="public-cover">
+      <div class="public-cover-pattern"></div>
+      <div class="public-top-actions">
+        <button class="public-round-btn" id="share-top" aria-label="Share card"><i data-lucide="share-2" size="19"></i></button>
+        <button class="public-round-btn" id="qr-top" aria-label="Show QR code"><i data-lucide="qr-code" size="19"></i></button>
+      </div>
+      <div class="public-avatar" id="avatar"><span id="avatar-initials">DC</span></div>
+    </div>
+
+    <div class="public-content">
+      <h1 id="name"></h1>
+      <p class="public-title" id="title"></p>
+      <p class="public-company" id="company"></p>
+      <p class="public-headline" id="headline"></p>
+      <p class="public-bio" id="bio"></p>
+
+      <div class="action-grid" id="actions"></div>
+      <button class="primary-card-cta" id="save"><i data-lucide="user-round-plus" size="19"></i> Save to contacts</button>
+      <div class="business-action-stack" id="business-actions"></div>
+
+      <section class="public-section" id="social-section" hidden>
+        <div class="public-section-heading"><h2>Connect with me</h2><span>Follow & message</span></div>
+        <div class="public-socials" id="socials"></div>
+      </section>
+
+      <section class="public-section" id="services-section" hidden>
+        <div class="public-section-heading"><h2>Services</h2><span>How I can help</span></div>
+        <div class="public-service-list" id="services"></div>
+      </section>
+
+      <section class="public-section" id="products-section" hidden>
+        <div class="public-section-heading"><h2>Featured products</h2><span>Shop & learn more</span></div>
+        <div class="public-product-grid" id="products"></div>
+      </section>
+
+      <section class="public-section lead-capture-section" id="lead-section" hidden>
+        <div class="public-section-heading"><h2>Send an inquiry</h2><span>Let’s connect</span></div>
+        <form id="lead-form" class="public-lead-form">
+          <div class="lead-form-row"><input class="input" name="name" required placeholder="Your name"><input class="input" name="phone" type="tel" placeholder="Phone number"></div>
+          <input class="input" name="email" type="email" placeholder="Email address">
+          <select class="input" name="service_interest" id="lead-service" hidden><option value="">What are you interested in?</option></select>
+          <input class="lead-honeypot" name="website_check" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <textarea class="input" name="message" required maxlength="600" placeholder="How can I help you?"></textarea>
+          <button class="btn btn-primary btn-block" type="submit"><i data-lucide="send" size="17"></i> Send inquiry</button>
+          <small>Your information goes directly to the card owner.</small>
+        </form>
+      </section>
+
+      <p class="public-branding" id="branding">Powered by DotCo Cards</p>
+    </div>
+  </article>
+</main>
+
+<button class="btn btn-primary sticky-contact" id="sticky-save" hidden><i data-lucide="contact-round" size="19"></i> Save contact</button>
+
+<dialog id="qr-dialog">
+  <div class="modal-body">
+    <div class="modal-head"><div><h2 style="margin:0">Scan to connect</h2><p class="muted" style="margin:4px 0 0">Open this card on another phone.</p></div><button class="icon-btn" id="close-qr"><i data-lucide="x"></i></button></div>
+    <div class="qr-frame"><img id="qr" width="240" height="240" alt="QR code"></div>
+    <button class="btn btn-light btn-block" id="copy-link"><i data-lucide="copy" size="17"></i> Copy card link</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast"></div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js?v=20260722-1"></script>
+<script src="js/common.js?v=20260722-1"></script>
+<script src="js/social-icons.js?v=20260722-1"></script>
+<script src="js/public-card.js?v=20260722-1"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+DOTCO CARDS V3 UPLOAD
+
+1. Open GitHub repository: globalcorent/dotco-cards
+2. Click Add file > Upload files.
+3. Drag every file and folder from this extracted package into GitHub.
+4. Allow existing files to be replaced.
+5. Commit with: Launch DotCo Cards V3 add-ons and social experience
+6. Wait a few minutes for GitHub Pages to deploy.
+7. Open the live site and press Ctrl + Shift + R.
+
+The Supabase database migrations, Stripe test add-on products, manage-addon Edge Function, and upgraded Stripe webhook are already live. Do not upload or expose secret keys.

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#13162a">
+  <meta name="description" content="Customize your DotCo Cards subscription with powerful recurring add-ons.">
+  <title>Add-ons | DotCo Cards</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260722-1">
+</head>
+<body>
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="dashboard.html"><span class="brand-mark">DC</span> DotCo <span>Cards</span></a>
+      <span class="sidebar-label">Workspace</span>
+      <nav>
+        <a href="dashboard.html"><i data-lucide="layout-dashboard" size="18"></i> Overview</a>
+        <a href="editor.html"><i data-lucide="badge-plus" size="18"></i> Create card</a>
+        <a href="analytics.html"><i data-lucide="chart-no-axes-combined" size="18"></i> Analytics</a>
+        <a href="leads.html"><i data-lucide="inbox" size="18"></i> Leads</a>
+        <a class="active" href="addons.html"><i data-lucide="blocks" size="18"></i> Add-ons</a>
+        <a href="pricing.html"><i data-lucide="credit-card" size="18"></i> Plans & billing</a>
+      </nav>
+      <span class="sidebar-label">Account</span>
+      <nav>
+        <button onclick="openPortal()"><i data-lucide="receipt-text" size="18"></i> Manage billing</button>
+        <button onclick="logout()"><i data-lucide="log-out" size="18"></i> Log out</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-plan">
+          <strong id="sidebar-plan">Loading plan…</strong>
+          <small id="sidebar-plan-copy">Checking your subscription.</small>
+          <a href="pricing.html" class="btn btn-primary btn-sm" style="width:100%;margin-top:12px">Compare plans</a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="mobile-sidebar-toggle icon-btn" id="sidebar-toggle" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+          <div>
+            <span class="eyebrow">Power up your workspace</span>
+            <h1 style="margin-top:8px">Add-ons marketplace</h1>
+            <p class="muted">Add only what you need. Everything stays on your existing subscription.</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-light" onclick="openPortal()"><i data-lucide="settings-2" size="17"></i> Billing portal</button>
+        </div>
+      </div>
+
+      <section class="addon-hero card">
+        <div>
+          <span class="eyebrow">Your subscription</span>
+          <div class="addon-plan-line">
+            <h2 id="current-plan">Loading…</h2>
+            <span class="status-pill" id="current-plan-status">Checking</span>
+          </div>
+          <p class="muted" id="billing-summary">We are checking your billing interval and active features.</p>
+        </div>
+        <div class="addon-hero-metrics">
+          <div><strong id="active-addon-count">0</strong><span>paid add-ons</span></div>
+          <div><strong id="included-addon-count">0</strong><span>included features</span></div>
+          <div><strong id="addon-total">$0</strong><span id="addon-total-label">per month</span></div>
+        </div>
+      </section>
+
+      <section class="active-addon-strip" id="active-addon-strip" hidden>
+        <div class="section-title">
+          <div><h2>Active enhancements</h2><p class="muted">Your current paid and plan-included upgrades.</p></div>
+        </div>
+        <div class="active-addon-chips" id="active-addon-chips"></div>
+      </section>
+
+      <section style="margin-top:30px">
+        <div class="section-title">
+          <div>
+            <h2>Choose your upgrades</h2>
+            <p class="muted">Add-ons activate on your current subscription. Added features are prorated by Stripe.</p>
+          </div>
+          <div class="market-filter" role="group" aria-label="Add-on categories">
+            <button class="active" data-filter="all">All</button>
+            <button data-filter="capacity">Capacity</button>
+            <button data-filter="growth">Growth</button>
+            <button data-filter="conversion">Conversion</button>
+            <button data-filter="brand">Brand</button>
+            <button data-filter="design">Design</button>
+            <button data-filter="commerce">Commerce</button>
+          </div>
+        </div>
+        <div id="addon-grid" class="addon-grid">
+          <div class="card empty-state" style="grid-column:1/-1"><span class="loader-ring"></span><h3>Loading add-ons</h3></div>
+        </div>
+      </section>
+
+      <section class="card domain-workspace" id="domain-workspace" hidden>
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Custom domain setup</span>
+            <h2 style="margin:10px 0 4px">Connect your branded web address</h2>
+            <p class="muted">Submit the domain you own. DotCo will track setup, DNS, SSL, and routing.</p>
+          </div>
+          <span class="status-pill active">Add-on active</span>
+        </div>
+        <form id="domain-form" class="domain-form">
+          <div class="form-group">
+            <label for="domain-card">Card to connect</label>
+            <select class="input" id="domain-card" required></select>
+          </div>
+          <div class="form-group">
+            <label for="domain-name">Domain name</label>
+            <input class="input" id="domain-name" placeholder="card.yourbusiness.com" required>
+          </div>
+          <div class="form-group">
+            <label for="domain-path">Preferred path <span class="muted">(optional)</span></label>
+            <input class="input" id="domain-path" placeholder="/damion">
+          </div>
+          <button class="btn btn-primary" type="submit"><i data-lucide="send" size="17"></i> Submit request</button>
+        </form>
+        <div id="domain-requests" class="domain-request-list"></div>
+      </section>
+
+      <section class="marketplace-assurance">
+        <article><i data-lucide="shield-check"></i><div><strong>Secure billing</strong><span>All add-on changes are processed through Stripe.</span></div></article>
+        <article><i data-lucide="replace"></i><div><strong>No duplicate subscriptions</strong><span>Add-ons attach to your current DotCo subscription.</span></div></article>
+        <article><i data-lucide="undo-2"></i><div><strong>Flexible changes</strong><span>Remove add-ons anytime; Stripe handles credits and prorations.</span></div></article>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="remove-addon-dialog">
+    <div class="modal-body">
+      <div class="modal-head">
+        <div><h2 style="margin:0">Remove add-on?</h2><p class="muted" style="margin:4px 0 0" id="remove-addon-copy">This feature will be disabled.</p></div>
+        <button class="icon-btn" id="close-remove-dialog" aria-label="Close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-light" id="cancel-remove-addon">Keep add-on</button>
+        <button class="btn btn-danger" id="confirm-remove-addon">Remove add-on</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js?v=20260722-1"></script>
+  <script src="js/common.js?v=20260722-1"></script>
+  <script src="js/billing.js?v=20260722-1"></script>
+  <script src="js/addons.js?v=20260722-1"></script>
+</body>
+</html>

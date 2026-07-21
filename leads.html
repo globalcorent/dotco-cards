@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#13162a">
+  <title>Leads | DotCo Cards</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260722-1">
+</head>
+<body>
+<div class="dashboard">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="dashboard.html"><span class="brand-mark">DC</span> DotCo <span>Cards</span></a>
+    <span class="sidebar-label">Workspace</span>
+    <nav>
+      <a href="dashboard.html"><i data-lucide="layout-dashboard" size="18"></i> Overview</a>
+      <a href="editor.html"><i data-lucide="badge-plus" size="18"></i> Create card</a>
+      <a href="analytics.html"><i data-lucide="chart-no-axes-combined" size="18"></i> Analytics</a>
+      <a class="active" href="leads.html"><i data-lucide="inbox" size="18"></i> Leads</a>
+      <a href="addons.html"><i data-lucide="blocks" size="18"></i> Add-ons</a>
+      <a href="pricing.html"><i data-lucide="credit-card" size="18"></i> Plans & billing</a>
+    </nav>
+    <span class="sidebar-label">Account</span>
+    <nav><button onclick="openPortal()"><i data-lucide="receipt-text" size="18"></i> Manage billing</button><button onclick="logout()"><i data-lucide="log-out" size="18"></i> Log out</button></nav>
+    <div class="sidebar-footer"><div class="sidebar-plan"><strong id="sidebar-plan">Loading…</strong><small id="sidebar-plan-copy">Checking lead access.</small><a href="addons.html" class="btn btn-primary btn-sm" style="width:100%;margin-top:12px">View add-ons</a></div></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="mobile-sidebar-toggle icon-btn" id="sidebar-toggle"><i data-lucide="menu"></i></button>
+        <div><span class="eyebrow">Customer inquiries</span><h1 style="margin-top:8px">Lead inbox</h1><p class="muted">Follow up with people who submit your card inquiry form.</p></div>
+      </div>
+      <div class="topbar-actions"><a class="btn btn-light" href="editor.html"><i data-lucide="settings-2" size="17"></i> Configure card</a></div>
+    </div>
+
+    <section id="leads-lock" class="card analytics-lock" hidden>
+      <span class="analytics-lock-icon"><i data-lucide="inbox" size="25"></i></span>
+      <div><span class="eyebrow">Lead Capture</span><h2>Turn card visitors into customers</h2><p class="muted">Add a mobile inquiry form to your public cards and manage every lead from this inbox.</p></div>
+      <a class="btn btn-primary" href="addons.html">Activate Lead Capture</a>
+    </section>
+
+    <section id="leads-content">
+      <div class="grid stats leads-stats">
+        <article class="card stat"><div class="stat-label"><span>New leads</span><span class="stat-icon"><i data-lucide="sparkles" size="18"></i></span></div><strong id="lead-new-count">0</strong><small class="muted">Waiting for your reply</small></article>
+        <article class="card stat"><div class="stat-label"><span>Contacted</span><span class="stat-icon"><i data-lucide="phone-call" size="18"></i></span></div><strong id="lead-contacted-count">0</strong><small class="muted">Follow-up started</small></article>
+        <article class="card stat"><div class="stat-label"><span>Qualified</span><span class="stat-icon"><i data-lucide="badge-check" size="18"></i></span></div><strong id="lead-qualified-count">0</strong><small class="muted">Strong opportunities</small></article>
+        <article class="card stat"><div class="stat-label"><span>Total leads</span><span class="stat-icon"><i data-lucide="users" size="18"></i></span></div><strong id="lead-total-count">0</strong><small class="muted">All inquiries</small></article>
+      </div>
+
+      <section class="card leads-panel">
+        <div class="section-title">
+          <div><h2>Inbox</h2><p class="muted">Use status filters to keep follow-up organized.</p></div>
+          <div class="lead-toolbar"><input class="input" id="lead-search" type="search" placeholder="Search name, email or phone"><select class="input" id="lead-filter"><option value="all">All statuses</option><option value="new">New</option><option value="contacted">Contacted</option><option value="qualified">Qualified</option><option value="closed">Closed</option><option value="spam">Spam</option></select></div>
+        </div>
+        <div id="lead-list" class="lead-list"></div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<dialog id="lead-dialog">
+  <div class="modal-body lead-modal-body">
+    <div class="modal-head"><div><span class="eyebrow">Lead details</span><h2 id="lead-dialog-name" style="margin:8px 0 0">Customer</h2></div><button class="icon-btn" id="close-lead-dialog"><i data-lucide="x"></i></button></div>
+    <div id="lead-dialog-content"></div>
+  </div>
+</dialog>
+<div id="toast" class="toast"></div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js?v=20260722-1"></script>
+<script src="js/common.js?v=20260722-1"></script>
+<script src="js/billing.js?v=20260722-1"></script>
+<script src="js/leads.js?v=20260722-1"></script>
+</body>
+</html>
