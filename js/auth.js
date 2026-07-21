@@ -1,43 +1,7 @@
 const form=document.querySelector('form[data-auth]');
 const message=document.getElementById('message');
-
-function show(msg,type='error'){
-  message.className='alert '+type;
-  message.textContent=msg;
-}
-
-if(form)form.addEventListener('submit',async e=>{
-  e.preventDefault();
-  const mode=form.dataset.auth;
-  const fd=new FormData(form);
-  const email=fd.get('email');
-  const password=fd.get('password');
-
-  try{
-    if(mode==='register'){
-      const full_name=fd.get('full_name');
-      const {error}=await supabaseClient.auth.signUp({
-        email,
-        password,
-        options:{
-          data:{full_name},
-          emailRedirectTo:dotcoUrl('dashboard.html')
-        }
-      });
-      if(error)throw error;
-      show('Account created. Check your email to verify your account.','success');
-    }else if(mode==='login'){
-      const {error}=await supabaseClient.auth.signInWithPassword({email,password});
-      if(error)throw error;
-      location.href=dotcoUrl('dashboard.html');
-    }else if(mode==='forgot'){
-      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{
-        redirectTo:dotcoUrl('reset-password.html')
-      });
-      if(error)throw error;
-      show('Password reset email sent.','success');
-    }
-  }catch(err){
-    show(err.message);
-  }
-});
+function show(msg,type='error'){if(!message)return;message.className='alert '+type;message.textContent=msg}
+function setBusy(busy){const button=form?.querySelector('button[type="submit"]');if(!button)return;button.disabled=busy;button.dataset.original=button.dataset.original||button.innerHTML;button.innerHTML=busy?'<span>Working…</span>':button.dataset.original}
+document.querySelectorAll('[data-password-toggle]').forEach(button=>button.addEventListener('click',()=>{const input=button.parentElement.querySelector('input');input.type=input.type==='password'?'text':'password';button.setAttribute('aria-label',input.type==='password'?'Show password':'Hide password')}));
+if(form)form.addEventListener('submit',async e=>{e.preventDefault();setBusy(true);const mode=form.dataset.auth;const fd=new FormData(form);const email=fd.get('email');const password=fd.get('password');try{if(mode==='register'){const full_name=fd.get('full_name');const {error}=await supabaseClient.auth.signUp({email,password,options:{data:{full_name},emailRedirectTo:dotcoUrl('dashboard.html')}});if(error)throw error;show('Account created. Check your email to verify your account.','success');form.reset()}else if(mode==='login'){const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;const next=sessionStorage.getItem('dotco_after_login');sessionStorage.removeItem('dotco_after_login');location.href=next==='pricing'?dotcoUrl('pricing.html'):dotcoUrl('dashboard.html')}else if(mode==='forgot'){const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:dotcoUrl('reset-password.html')});if(error)throw error;show('Password reset email sent. Check your inbox.','success')}}catch(err){show(err.message)}finally{setBusy(false)}});
+if(window.lucide)lucide.createIcons();

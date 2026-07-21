@@ -1,16 +1,27 @@
 # DotCo Cards
 
-Production-minded SaaS MVP for digital business cards.
+A production-minded SaaS for professional digital business cards.
+
+## Current experience
+
+- Premium marketing website and pricing comparison
+- Supabase email authentication and password recovery
+- Guided dashboard with onboarding and plan usage
+- Multi-step card editor with live mobile preview
+- Profile photo upload through Supabase Storage
+- Industry templates and brand customization
+- Social-link management
+- Public mobile business card with QR, sharing, contact download, and analytics
+- Stripe Checkout subscriptions and Customer Portal
+- Backend publishing and plan-limit enforcement
 
 ## Live services
 
+- Website: `https://globalcorent.github.io/dotco-cards/`
 - Supabase project: `https://bmgmdgkviqqtaluvdprh.supabase.co`
-- Stripe products and six monthly/yearly plan prices are already created in Stripe test mode.
-- Database schema, RLS, storage buckets, plan limits, and templates are already applied.
+- Stripe products and monthly/yearly plan prices are configured in Stripe test mode.
 
-## Run locally
-
-Serve the folder with any static server:
+## Local development
 
 ```bash
 python -m http.server 8080
@@ -18,56 +29,29 @@ python -m http.server 8080
 
 Open `http://localhost:8080`.
 
-## Supabase configuration
+## Security
 
-The publishable browser key is already in `js/config.js`. This is safe to expose. Never place the service-role key in browser code.
+Only the Supabase project URL and publishable browser key belong in frontend JavaScript. Never commit the Supabase service-role key, Stripe secret key, or Stripe webhook secret.
 
-Add these Edge Function secrets in Supabase:
+## Supabase Edge Function secrets
 
-```bash
-supabase secrets set STRIPE_SECRET_KEY=...
-supabase secrets set STRIPE_WEBHOOK_SECRET=...
-```
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
 
-Then deploy:
-
-```bash
-supabase functions deploy create-checkout-session
-supabase functions deploy create-portal-session
-supabase functions deploy stripe-webhook --no-verify-jwt
-```
-
-Create a Stripe webhook endpoint:
+## Stripe webhook endpoint
 
 `https://bmgmdgkviqqtaluvdprh.supabase.co/functions/v1/stripe-webhook`
 
-Listen for:
+Events:
 
-- checkout.session.completed
-- customer.subscription.created
-- customer.subscription.updated
-- customer.subscription.deleted
-- invoice.paid
-- invoice.payment_failed
+- `checkout.session.completed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.paid`
+- `invoice.payment_failed`
 
-## Authentication URLs
+## Authentication redirects
 
-In Supabase Authentication URL Configuration, add your production domain and local development redirect URLs.
-
-## Current MVP features
-
-- Sign up, sign in, forgot password
-- Protected dashboard
-- Create and edit digital cards
-- Publish/unpublish cards
-- Public shareable card
-- vCard contact download
-- QR code
-- Analytics event capture
-- Stripe Checkout and Customer Portal Edge Functions
-- Responsive mobile design
-- GitHub Pages workflow
-
-## Production follow-up
-
-Add image upload/cropping, social-link editor, service/product CRUD, lead inbox, analytics charts, admin UI, add-on Stripe products, custom domains, and stronger abuse prevention for public analytics endpoints.
+- `https://globalcorent.github.io/dotco-cards/**`
+- `http://localhost:8080/**`
