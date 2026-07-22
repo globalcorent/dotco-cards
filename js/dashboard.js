@@ -9,7 +9,7 @@
     supabaseClient.from('card_views').select('id', { count: 'exact', head: true }),
     supabaseClient.from('card_events').select('id', { count: 'exact', head: true }).eq('event_type', 'contact_save'),
     supabaseClient.from('subscription_addons').select('*').eq('user_id', user.id),
-    supabaseClient.from('addon_definitions').select('addon_key,name,included_plans,icon').eq('is_active', true).order('sort_order'),
+    supabaseClient.from('addon_definitions').select('addon_key,name,included_plans,icon,is_sellable').eq('is_active', true).order('sort_order'),
     supabaseClient.from('leads').select('id', { count: 'exact', head: true }).eq('owner_user_id', user.id).eq('status', 'new')
   ]);
 
@@ -27,9 +27,11 @@
     .maybeSingle();
 
   const active = ['active', 'trialing', 'past_due'].includes(subscription?.status);
+  const paidPlan = active && Boolean(subscription?.stripe_subscription_id);
   const name = profile?.full_name || user.user_metadata?.full_name || '';
   const firstName = name.trim().split(' ')[0] || 'there';
-  const paidAddons = addons.filter(row => ['active', 'trialing', 'past_due'].includes(row.status));
+  const sellableKeys = new Set(definitions.filter(definition => definition.is_sellable).map(definition => definition.addon_key));
+  const paidAddons = addons.filter(row => sellableKeys.has(row.addon_key) && ['active', 'trialing', 'past_due'].includes(row.status));
   const extraCards = paidAddons.find(row => row.addon_key === 'extra_card')?.quantity || 0;
   const baseLimit = planDefinition?.card_limit || 1;
   const limit = baseLimit + Number(extraCards || 0);
@@ -42,15 +44,19 @@
   document.getElementById('user-chip').textContent = firstName.slice(0, 1).toUpperCase();
   document.getElementById('plan').textContent = planDefinition?.name || 'Starter';
   document.getElementById('plan-status').textContent = active
-    ? subscription.status === 'past_due' ? 'Payment needs attention' : subscription.status === 'trialing' ? 'Trial active' : 'Subscription active'
-    : 'Preview mode';
-  document.getElementById('renewal-date').textContent = active && subscription.current_period_end
-    ? `Renews ${new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-    : 'No active renewal';
+    ? planKey === 'starter' ? 'Free plan active' : subscription.status === 'past_due' ? 'Payment needs attention' : subscription.status === 'trialing' ? 'Trial active' : 'Paid plan active'
+    : 'Plan inactive';
+  document.getElementById('renewal-date').textContent = planKey === 'starter' && active
+    ? 'Free forever · no renewal'
+    : active && subscription.current_period_end
+      ? `Renews ${new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      : 'No active renewal';
   document.getElementById('sidebar-plan').textContent = active ? `${planDefinition?.name || 'Starter'} plan` : 'Starter preview';
   document.getElementById('sidebar-plan-copy').textContent = active
-    ? `${subscription.billing_interval === 'year' ? 'Yearly' : 'Monthly'} billing · ${paidAddons.length} paid add-on${paidAddons.length === 1 ? '' : 's'}.`
-    : 'Activate a plan to publish.';
+    ? paidPlan
+      ? `${subscription.billing_interval === 'year' ? 'Yearly' : 'Monthly'} billing · ${paidAddons.length} paid extra${paidAddons.length === 1 ? '' : 's'}.`
+      : 'Free forever · 1 published card.'
+    : 'Activate Free Starter to publish.';
 
   document.getElementById('card-count').textContent = String(cardCount);
   document.getElementById('card-usage').textContent = `${Math.max(limit - cardCount, 0)} remaining`;
@@ -79,7 +85,7 @@
   const percent = Math.round(complete.filter(Boolean).length / complete.length * 100);
   document.getElementById('onboarding-percent').textContent = `${percent}%`;
   document.getElementById('onboarding-progress').style.width = `${percent}%`;
-  document.getElementById('upgrade-banner').hidden = active;
+  document.getElementById('upgrade-banner').hidden = active && planKey !== 'starter';
 
   const includedDefinitions = definitions.filter(def => def.included_plans?.includes(planKey));
   const activeDefinitions = paidAddons.map(row => definitions.find(def => def.addon_key === row.addon_key)).filter(Boolean);
@@ -96,6 +102,11 @@
     document.getElementById('welcome-headline').textContent = 'Your digital presence is live.';
     document.getElementById('welcome-copy').textContent = 'Keep your cards fresh, follow engagement, and use add-ons to turn more visitors into customers.';
   }
+
+  const pageParams = new URLSearchParams(location.search);
+  if (pageParams.get('purchase') === 'success') toast('Order received. DotCo will follow up with the next steps.');
+  else if (pageParams.get('billing') === 'free') toast('Free Starter is active. You can publish one card now.');
+  else if (pageParams.get('billing') === 'success') toast('Payment received. Your plan is being activated.');
 
   renderCards(cards);
   document.getElementById('sidebar-toggle')?.addEventListener('click', () => document.getElementById('sidebar')?.classList.toggle('open'));

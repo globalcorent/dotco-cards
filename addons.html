@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#13162a">
-  <meta name="description" content="Customize your DotCo Cards subscription with powerful recurring add-ons.">
+  <meta name="description" content="Manage two simple recurring extras and order one-time DotCo setup services.">
   <title>Add-ons | DotCo Cards</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260722-4">
+  <link rel="stylesheet" href="css/styles.css?v=20260722-7">
 </head>
 <body>
   <div class="dashboard">
@@ -41,8 +41,8 @@
           <button class="mobile-sidebar-toggle icon-btn" id="sidebar-toggle" aria-label="Open navigation"><i data-lucide="menu"></i></button>
           <div>
             <span class="eyebrow">Power up your workspace</span>
-            <h1 style="margin-top:8px">Add-ons marketplace</h1>
-            <p class="muted">Add only what you need. Everything stays on your existing subscription.</p>
+            <h1 style="margin-top:8px">Simple upgrades</h1>
+            <p class="muted">Pro and Agency already include the business tools. Add only extra cards or a custom domain.</p>
           </div>
         </div>
         <div class="topbar-actions">
@@ -60,7 +60,7 @@
           <p class="muted" id="billing-summary">We are checking your billing interval and active features.</p>
         </div>
         <div class="addon-hero-metrics">
-          <div><strong id="active-addon-count">0</strong><span>paid add-ons</span></div>
+          <div><strong id="active-addon-count">0</strong><span>recurring extras</span></div>
           <div><strong id="included-addon-count">0</strong><span>included features</span></div>
           <div><strong id="addon-total">$0</strong><span id="addon-total-label">per month</span></div>
         </div>
@@ -68,7 +68,7 @@
 
       <section class="active-addon-strip" id="active-addon-strip" hidden>
         <div class="section-title">
-          <div><h2>Active enhancements</h2><p class="muted">Your current paid and plan-included upgrades.</p></div>
+          <div><h2>Included and active</h2><p class="muted">Features included with your plan plus any recurring extras.</p></div>
         </div>
         <div class="active-addon-chips" id="active-addon-chips"></div>
       </section>
@@ -76,17 +76,13 @@
       <section style="margin-top:30px">
         <div class="section-title">
           <div>
-            <h2>Choose your upgrades</h2>
-            <p class="muted">Add-ons activate on your current subscription. Added features are prorated by Stripe.</p>
+            <h2>Recurring extras</h2>
+            <p class="muted">Only two optional recurring charges. A paid Pro or Agency plan is required.</p>
           </div>
           <div class="market-filter" role="group" aria-label="Add-on categories">
             <button class="active" data-filter="all">All</button>
-            <button data-filter="capacity">Capacity</button>
-            <button data-filter="growth">Growth</button>
-            <button data-filter="conversion">Conversion</button>
-            <button data-filter="brand">Brand</button>
-            <button data-filter="design">Design</button>
-            <button data-filter="commerce">Commerce</button>
+            <button data-filter="capacity">Extra cards</button>
+            <button data-filter="brand">Custom domain</button>
           </div>
         </div>
         <div id="addon-grid" class="addon-grid">
@@ -121,9 +117,22 @@
         <div id="domain-requests" class="domain-request-list"></div>
       </section>
 
+      <section style="margin-top:36px">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">One-time services</span>
+            <h2 style="margin:9px 0 4px">Get help launching or add an NFC item</h2>
+            <p class="muted">No subscription change. Pay once through secure Stripe Checkout.</p>
+          </div>
+        </div>
+        <div class="one-time-offer-grid" id="one-time-offer-grid">
+          <div class="card empty-state" style="grid-column:1/-1"><span class="loader-ring"></span><h3>Loading services</h3></div>
+        </div>
+      </section>
+
       <section class="marketplace-assurance">
-        <article><i data-lucide="shield-check"></i><div><strong>Secure billing</strong><span>All add-on changes are processed through Stripe.</span></div></article>
-        <article><i data-lucide="replace"></i><div><strong>No duplicate subscriptions</strong><span>Add-ons attach to your current DotCo subscription.</span></div></article>
+        <article><i data-lucide="shield-check"></i><div><strong>Secure billing</strong><span>All recurring changes and one-time orders are processed through Stripe.</span></div></article>
+        <article><i data-lucide="replace"></i><div><strong>No duplicate subscriptions</strong><span>Recurring extras attach to your current paid DotCo subscription.</span></div></article>
         <article><i data-lucide="undo-2"></i><div><strong>Flexible changes</strong><span>Remove add-ons anytime; Stripe handles credits and prorations.</span></div></article>
       </section>
     </main>
@@ -147,7 +156,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=20260722-4"></script>
   <script src="js/common.js?v=20260722-5"></script>
-  <script src="js/billing.js?v=20260722-4"></script>
-  <script src="js/addons.js?v=20260722-4"></script>
+  <script src="js/billing.js?v=20260722-7"></script>
+  <script src="js/addons.js?v=20260722-7"></script>
 </body>
 </html>

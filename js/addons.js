@@ -5,6 +5,7 @@ let addonDefinitions = [];
 let addonRows = [];
 let addonCards = [];
 let domainRequests = [];
+let oneTimeOffers = [];
 let pendingRemoval = null;
 const activeAddonStatuses = new Set(['active', 'trialing', 'past_due']);
 
@@ -12,12 +13,13 @@ const activeAddonStatuses = new Set(['active', 'trialing', 'past_due']);
   addonUser = await requireUser();
   if (!addonUser) return;
 
-  const [subscriptionResult, definitionsResult, addonResult, cardsResult, domainsResult] = await Promise.all([
+  const [subscriptionResult, definitionsResult, addonResult, cardsResult, domainsResult, offersResult] = await Promise.all([
     supabaseClient.from('subscriptions').select('*').eq('user_id', addonUser.id).maybeSingle(),
     supabaseClient.from('addon_definitions').select('*').eq('is_active', true).order('sort_order'),
     supabaseClient.from('subscription_addons').select('*').eq('user_id', addonUser.id),
     supabaseClient.from('digital_cards').select('id,full_name,company_name,slug,status').order('updated_at', { ascending: false }),
-    supabaseClient.from('domain_requests').select('*').eq('user_id', addonUser.id).order('created_at', { ascending: false })
+    supabaseClient.from('domain_requests').select('*').eq('user_id', addonUser.id).order('created_at', { ascending: false }),
+    supabaseClient.from('one_time_offers').select('*').eq('is_active', true).order('sort_order')
   ]);
 
   if (subscriptionResult.error) toast(subscriptionResult.error.message);
@@ -25,12 +27,14 @@ const activeAddonStatuses = new Set(['active', 'trialing', 'past_due']);
   if (addonResult.error) toast(addonResult.error.message);
   if (cardsResult.error) toast(cardsResult.error.message);
   if (domainsResult.error) toast(domainsResult.error.message);
+  if (offersResult.error) toast(offersResult.error.message);
 
   addonSubscription = subscriptionResult.data;
   addonDefinitions = definitionsResult.data || [];
   addonRows = addonResult.data || [];
   addonCards = cardsResult.data || [];
   domainRequests = domainsResult.data || [];
+  oneTimeOffers = offersResult.data || [];
 
   const planKey = addonSubscription?.plan_key || 'starter';
   const { data: planDefinition } = await supabaseClient.from('plan_definitions')
@@ -42,6 +46,7 @@ const activeAddonStatuses = new Set(['active', 'trialing', 'past_due']);
   renderSubscriptionSummary();
   renderAddons();
   renderDomainWorkspace();
+  renderOneTimeOffers();
   wireAddonPage();
   if (window.lucide) lucide.createIcons();
 })();
@@ -72,11 +77,12 @@ function wireAddonPage() {
 
 function renderSubscriptionSummary() {
   const activePlan = addonSubscription && activeAddonStatuses.has(addonSubscription.status);
+  const paidPlan = activePlan && Boolean(addonSubscription.stripe_subscription_id);
   const interval = addonSubscription?.billing_interval === 'year' ? 'year' : 'month';
-  const activePaid = addonDefinitions.filter(def => {
+  const activePaid = addonDefinitions.filter(def => def.is_sellable && (() => {
     const row = addonRow(def.addon_key);
     return row && activeAddonStatuses.has(row.status) && !isIncluded(def);
-  });
+  })());
   const included = addonDefinitions.filter(isIncluded);
   const totalCents = activePaid.reduce((sum, def) => {
     const row = addonRow(def.addon_key);
@@ -90,8 +96,10 @@ function renderSubscriptionSummary() {
   status.className = `status-pill ${activePlan ? (addonSubscription.status === 'past_due' ? 'past_due' : 'active') : 'draft'}`;
 
   document.getElementById('billing-summary').textContent = activePlan
-    ? `${interval === 'year' ? 'Yearly' : 'Monthly'} billing · ${addonPlan.card_limit} base card${addonPlan.card_limit === 1 ? '' : 's'} · Add-ons renew with your plan.`
-    : 'Activate Starter, Pro, or Agency before adding recurring upgrades.';
+    ? paidPlan
+      ? `${interval === 'year' ? 'Yearly' : 'Monthly'} billing · ${addonPlan.card_limit} base card${addonPlan.card_limit === 1 ? '' : 's'} · Recurring extras renew with your plan.`
+      : `Free Starter · ${addonPlan.card_limit} published card · Upgrade to Pro or Agency before adding recurring extras.`
+    : 'Activate Free Starter, Pro, or Agency to begin.';
   document.getElementById('active-addon-count').textContent = String(activePaid.length);
   document.getElementById('included-addon-count').textContent = String(included.length);
   document.getElementById('addon-total').textContent = formatMoney(interval === 'year' ? Math.round(totalCents / 12) : totalCents);
@@ -99,8 +107,10 @@ function renderSubscriptionSummary() {
 
   document.getElementById('sidebar-plan').textContent = activePlan ? `${addonPlan.name} plan` : 'Plan inactive';
   document.getElementById('sidebar-plan-copy').textContent = activePlan
-    ? `${interval === 'year' ? 'Yearly' : 'Monthly'} billing · ${activePaid.length} paid add-on${activePaid.length === 1 ? '' : 's'}.`
-    : 'Choose a plan to publish and add upgrades.';
+    ? paidPlan
+      ? `${interval === 'year' ? 'Yearly' : 'Monthly'} billing · ${activePaid.length} paid extra${activePaid.length === 1 ? '' : 's'}.`
+      : 'Free forever · 1 published card.'
+    : 'Choose a plan to publish.';
 
   const chips = [
     ...included.map(def => `<span class="active-addon-chip included"><i data-lucide="circle-check" size="15"></i>${escapeHtml(def.name)} <small>Included</small></span>`),
@@ -121,15 +131,17 @@ function renderSubscriptionSummary() {
 
 function renderAddons() {
   const grid = document.getElementById('addon-grid');
-  if (!addonDefinitions.length) {
+  const sellableDefinitions = addonDefinitions.filter(definition => definition.is_sellable);
+  if (!sellableDefinitions.length) {
     grid.innerHTML = '<div class="card empty-state" style="grid-column:1/-1"><span class="empty-icon"><i data-lucide="blocks" size="28"></i></span><h3>No add-ons available</h3><p class="muted">The marketplace is being prepared.</p></div>';
     return;
   }
 
   const interval = addonSubscription?.billing_interval === 'year' ? 'year' : 'month';
   const activePlan = addonSubscription && activeAddonStatuses.has(addonSubscription.status);
+  const paidPlan = activePlan && Boolean(addonSubscription.stripe_subscription_id);
 
-  grid.innerHTML = addonDefinitions.map(def => {
+  grid.innerHTML = sellableDefinitions.map(def => {
     const row = addonRow(def.addon_key);
     const active = row && activeAddonStatuses.has(row.status);
     const included = isIncluded(def);
@@ -142,8 +154,8 @@ function renderAddons() {
 
     if (included) {
       controls = `<div class="addon-ready-row"><div class="addon-included"><i data-lucide="badge-check" size="18"></i> Included with ${escapeHtml(addonPlan.name)}</div>${configure ? `<a class="btn btn-light btn-sm" href="${configure}">Configure</a>` : ''}</div>`;
-    } else if (!activePlan) {
-      controls = `<a class="btn btn-primary btn-block" href="pricing.html">Choose a plan</a>`;
+    } else if (!paidPlan) {
+      controls = `<a class="btn btn-primary btn-block" href="pricing.html">Choose Pro or Agency</a>`;
     } else if (active && def.is_quantity) {
       controls = `<div class="addon-quantity-row">
         <div class="quantity-control" aria-label="Extra card quantity">
@@ -276,6 +288,30 @@ function openRemoveDialog(addonKey) {
 function closeRemoveDialog() {
   pendingRemoval = null;
   document.getElementById('remove-addon-dialog').close();
+}
+
+
+function renderOneTimeOffers() {
+  const grid = document.getElementById('one-time-offer-grid');
+  if (!grid) return;
+  if (!oneTimeOffers.length) {
+    grid.innerHTML = '<div class="card empty-state" style="grid-column:1/-1"><h3>Services are being prepared</h3></div>';
+    return;
+  }
+
+  grid.innerHTML = oneTimeOffers.map(offer => `<article class="card one-time-offer-card ${offer.offer_key === 'done_for_you' ? 'featured' : ''}">
+    ${offer.badge ? `<span class="offer-badge">${escapeHtml(offer.badge)}</span>` : ''}
+    <span class="offer-icon"><i data-lucide="${escapeHtml(offer.icon || 'sparkles')}"></i></span>
+    <h3>${escapeHtml(offer.name)}</h3>
+    <p>${escapeHtml(offer.short_description)}</p>
+    <div class="offer-price">${formatMoney(offer.price_cents)} <small>one time</small></div>
+    <button class="btn ${offer.offer_key === 'done_for_you' ? 'btn-primary' : 'btn-light'} btn-block" type="button" data-purchase-offer="${escapeHtml(offer.offer_key)}">Buy now</button>
+  </article>`).join('');
+
+  grid.querySelectorAll('[data-purchase-offer]').forEach(button => {
+    button.addEventListener('click', () => checkoutOneTime(button.dataset.purchaseOffer, button));
+  });
+  if (window.lucide) lucide.createIcons();
 }
 
 function renderDomainWorkspace() {

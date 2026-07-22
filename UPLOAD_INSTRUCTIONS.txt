@@ -1,11 +1,25 @@
-DOTCO CARDS V3 UPLOAD
+DOTCO CARDS — AFFORDABLE PRICING UPDATE
 
-1. Open GitHub repository: globalcorent/dotco-cards
-2. Click Add file > Upload files.
-3. Drag every file and folder from this extracted package into GitHub.
-4. Allow existing files to be replaced.
-5. Commit with: Launch DotCo Cards V3 add-ons and social experience
-6. Wait a few minutes for GitHub Pages to deploy.
-7. Open the live site and press Ctrl + Shift + R.
+Backend status:
+- Stripe TEST prices and products are already created.
+- Supabase plan rules, Free Starter publishing, recurring extras, one-time orders, and webhooks are already deployed.
 
-The Supabase database migrations, Stripe test add-on products, manage-addon Edge Function, and upgraded Stripe webhook are already live. Do not upload or expose secret keys.
+Upload these files and folders to the ROOT of globalcorent/dotco-cards:
+- pricing.html
+- index.html
+- addons.html
+- dashboard.html
+- css/styles.css
+- js/pricing.js
+- js/billing.js
+- js/addons.js
+- js/dashboard.js
+
+Do not delete or replace editor.html or js/editor.js with files from an older package.
+
+Suggested commit message:
+Apply affordable pricing and one-time services
+
+After GitHub Pages deploys, hard refresh with Ctrl + Shift + R.
+
+IMPORTANT: This pricing catalog is currently configured in Stripe TEST MODE. Do not accept real customer payments until matching live-mode prices are created and the live Stripe keys/price IDs are installed.
