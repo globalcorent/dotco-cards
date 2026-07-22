@@ -1,3 +1,5 @@
+let pendingDeleteCard = null;
+
 (async function initDashboard() {
   const user = await requireUser();
   if (!user) return;
@@ -108,6 +110,7 @@
   else if (pageParams.get('billing') === 'free') toast('Free Starter is active. You can publish one card now.');
   else if (pageParams.get('billing') === 'success') toast('Payment received. Your plan is being activated.');
 
+  setupDeleteCardDialog();
   renderCards(cards);
   document.getElementById('sidebar-toggle')?.addEventListener('click', () => document.getElementById('sidebar')?.classList.toggle('open'));
   if (window.lucide) lucide.createIcons();
@@ -125,20 +128,145 @@ function renderCards(cards) {
     const publicUrl = dotcoUrl(`card.html?slug=${encodeURIComponent(card.slug)}`);
     const initials = (card.full_name || 'DC').split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase();
     const avatar = card.profile_image_url ? `<img src="${escapeHtml(card.profile_image_url)}" alt="">` : escapeHtml(initials);
-    return `<article class="card card-item">
+    const cardName = card.company_name || card.full_name || 'Untitled card';
+    return `<article class="card card-item" data-card-id="${escapeHtml(card.id)}">
       <div class="card-thumb" style="background:${escapeHtml(card.gradient_background || `linear-gradient(135deg,${card.primary_color || '#5b5cf0'},${card.secondary_color || '#9b5de5'})`)}">
         <span class="card-initials">${avatar}</span><span class="card-thumb-name">${escapeHtml(card.full_name || 'Untitled card')}</span>
       </div>
       <div class="card-meta">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3>${escapeHtml(card.company_name || card.full_name || 'Untitled card')}</h3><p class="muted" style="font-size:.86rem;margin-bottom:0">${escapeHtml(card.job_title || 'Add a job title')}</p></div><span class="status-pill ${card.status}">${card.status}</span></div>
-        <div class="card-actions"><a class="btn btn-light btn-sm" href="editor.html?id=${card.id}"><i data-lucide="pencil" size="15"></i> Edit</a><a class="btn btn-light btn-sm" href="${publicUrl}" target="_blank"><i data-lucide="eye" size="15"></i> ${card.status === 'published' ? 'View' : 'Preview'}</a><button class="btn btn-light btn-sm" data-copy="${publicUrl}" aria-label="Copy link"><i data-lucide="copy" size="15"></i></button></div>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3>${escapeHtml(cardName)}</h3><p class="muted" style="font-size:.86rem;margin-bottom:0">${escapeHtml(card.job_title || 'Add a job title')}</p></div><span class="status-pill ${card.status}">${card.status}</span></div>
+        <div class="card-actions">
+          <a class="btn btn-light btn-sm" href="editor.html?id=${encodeURIComponent(card.id)}"><i data-lucide="pencil" size="15"></i> Edit</a>
+          <a class="btn btn-light btn-sm" href="${publicUrl}" target="_blank" rel="noopener"><i data-lucide="eye" size="15"></i> ${card.status === 'published' ? 'View' : 'Preview'}</a>
+          <button class="btn btn-light btn-sm" data-copy="${publicUrl}" aria-label="Copy card link"><i data-lucide="copy" size="15"></i></button>
+          <button
+            class="btn btn-light btn-sm card-delete-button"
+            type="button"
+            data-delete-card="${escapeHtml(card.id)}"
+            data-delete-name="${escapeHtml(cardName)}"
+            aria-label="Delete ${escapeHtml(cardName)}"
+          ><i data-lucide="trash-2" size="15"></i> Delete</button>
+        </div>
       </div>
     </article>`;
   }).join('');
 
   list.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
-    await navigator.clipboard.writeText(button.dataset.copy);
-    toast('Card link copied');
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      toast('Card link copied');
+    } catch {
+      toast('Could not copy the card link');
+    }
   }));
+
+  list.querySelectorAll('[data-delete-card]').forEach(button => {
+    button.addEventListener('click', () => openDeleteCardDialog(button.dataset.deleteCard, button.dataset.deleteName));
+  });
+
   if (window.lucide) lucide.createIcons();
+}
+
+function setupDeleteCardDialog() {
+  const dialog = document.getElementById('delete-card-dialog');
+  const input = document.getElementById('delete-confirm-input');
+  const cancelButton = document.getElementById('cancel-delete-card');
+  const confirmButton = document.getElementById('confirm-delete-card');
+  if (!dialog || !input || !cancelButton || !confirmButton || dialog.dataset.ready === 'true') return;
+
+  dialog.dataset.ready = 'true';
+
+  input.addEventListener('input', () => {
+    confirmButton.disabled = input.value.trim().toUpperCase() !== 'DELETE';
+  });
+
+  cancelButton.addEventListener('click', () => closeDeleteCardDialog());
+
+  dialog.addEventListener('cancel', event => {
+    event.preventDefault();
+    closeDeleteCardDialog();
+  });
+
+  dialog.addEventListener('click', event => {
+    if (event.target === dialog) closeDeleteCardDialog();
+  });
+
+  confirmButton.addEventListener('click', deletePendingCard);
+}
+
+function openDeleteCardDialog(cardId, cardName) {
+  const dialog = document.getElementById('delete-card-dialog');
+  const input = document.getElementById('delete-confirm-input');
+  const confirmButton = document.getElementById('confirm-delete-card');
+  const cardNameElement = document.getElementById('delete-card-name');
+  if (!dialog || !input || !confirmButton || !cardNameElement || !cardId) return;
+
+  pendingDeleteCard = { id: cardId, name: cardName || 'Untitled card' };
+  cardNameElement.textContent = pendingDeleteCard.name;
+  input.value = '';
+  confirmButton.disabled = true;
+  confirmButton.innerHTML = '<i data-lucide="trash-2" size="16"></i> Delete permanently';
+
+  if (typeof dialog.showModal === 'function') {
+    dialog.showModal();
+  } else {
+    dialog.setAttribute('open', '');
+  }
+
+  if (window.lucide) lucide.createIcons();
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeDeleteCardDialog() {
+  const dialog = document.getElementById('delete-card-dialog');
+  const input = document.getElementById('delete-confirm-input');
+  if (dialog?.open && typeof dialog.close === 'function') dialog.close();
+  else dialog?.removeAttribute('open');
+  if (input) input.value = '';
+  pendingDeleteCard = null;
+}
+
+async function deletePendingCard() {
+  if (!pendingDeleteCard?.id) return;
+
+  const dialog = document.getElementById('delete-card-dialog');
+  const input = document.getElementById('delete-confirm-input');
+  const confirmButton = document.getElementById('confirm-delete-card');
+  const cancelButton = document.getElementById('cancel-delete-card');
+  if (!confirmButton || !cancelButton || input?.value.trim().toUpperCase() !== 'DELETE') return;
+
+  const cardToDelete = { ...pendingDeleteCard };
+  confirmButton.disabled = true;
+  cancelButton.disabled = true;
+  confirmButton.innerHTML = '<i data-lucide="loader-circle" size="16"></i> Deleting…';
+  if (window.lucide) lucide.createIcons();
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('digital_cards')
+      .delete()
+      .eq('id', cardToDelete.id)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data?.id) throw new Error('Card not found or you do not have permission to delete it.');
+
+    const cardElement = document.querySelector(`[data-card-id="${CSS.escape(cardToDelete.id)}"]`);
+    cardElement?.remove();
+
+    if (dialog?.open && typeof dialog.close === 'function') dialog.close();
+    else dialog?.removeAttribute('open');
+
+    pendingDeleteCard = null;
+    toast(`${cardToDelete.name} was permanently deleted`);
+
+    setTimeout(() => window.location.reload(), 650);
+  } catch (error) {
+    toast(error?.message || 'Could not delete this card');
+    confirmButton.disabled = false;
+    cancelButton.disabled = false;
+    confirmButton.innerHTML = '<i data-lucide="trash-2" size="16"></i> Delete permanently';
+    if (window.lucide) lucide.createIcons();
+  }
 }

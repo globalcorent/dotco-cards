@@ -7,6 +7,110 @@
   <meta name="description" content="Manage DotCo digital business cards, analytics, leads, and add-ons.">
   <title>Dashboard | DotCo Cards</title>
   <link rel="stylesheet" href="css/styles.css?v=20260722-7">
+  <style>
+    .card-delete-button {
+      color: #b42318;
+      border-color: rgba(180, 35, 24, .24);
+    }
+    .card-delete-button:hover {
+      color: #912018;
+      background: rgba(217, 45, 32, .08);
+      border-color: rgba(180, 35, 24, .38);
+    }
+    .delete-card-dialog {
+      width: min(92vw, 500px);
+      border: 0;
+      border-radius: 22px;
+      padding: 0;
+      color: inherit;
+      background: #fff;
+      box-shadow: 0 28px 90px rgba(16, 24, 40, .32);
+    }
+    .delete-card-dialog::backdrop {
+      background: rgba(16, 24, 40, .68);
+      backdrop-filter: blur(4px);
+    }
+    .delete-card-panel {
+      padding: 26px;
+    }
+    .delete-card-heading {
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+    }
+    .delete-warning-icon {
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      color: #b42318;
+      background: #fee4e2;
+    }
+    .delete-card-heading h2 {
+      margin: 0 0 7px;
+      font-size: 1.25rem;
+    }
+    .delete-card-heading p {
+      margin: 0;
+      line-height: 1.55;
+    }
+    .delete-card-summary {
+      margin: 20px 0;
+      padding: 14px 16px;
+      border: 1px solid #eaecf0;
+      border-radius: 14px;
+      background: #f9fafb;
+    }
+    .delete-card-summary strong {
+      display: block;
+      margin-bottom: 5px;
+      overflow-wrap: anywhere;
+    }
+    .delete-confirm-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .delete-confirm-input {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid #d0d5dd;
+      border-radius: 12px;
+      padding: 10px 13px;
+      font: inherit;
+      text-transform: uppercase;
+    }
+    .delete-confirm-input:focus {
+      outline: 3px solid rgba(217, 45, 32, .13);
+      border-color: #d92d20;
+    }
+    .delete-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .btn-danger {
+      color: #fff;
+      border-color: #d92d20;
+      background: #d92d20;
+    }
+    .btn-danger:hover:not(:disabled) {
+      border-color: #b42318;
+      background: #b42318;
+    }
+    .btn-danger:disabled {
+      cursor: not-allowed;
+      opacity: .48;
+    }
+    @media (max-width: 560px) {
+      .delete-card-panel { padding: 21px; }
+      .delete-dialog-actions { flex-direction: column-reverse; }
+      .delete-dialog-actions .btn { width: 100%; }
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard">
@@ -79,7 +183,7 @@
     </div>
 
     <section style="margin-top:30px">
-      <div class="section-title"><div><h2>My cards</h2><p class="muted" style="margin:3px 0 0">Manage, preview, publish, and share your digital cards.</p></div><a class="btn btn-light btn-sm" href="editor.html"><i data-lucide="plus" size="16"></i> Add card</a></div>
+      <div class="section-title"><div><h2>My cards</h2><p class="muted" style="margin:3px 0 0">Manage, preview, publish, share, or permanently delete your digital cards.</p></div><a class="btn btn-light btn-sm" href="editor.html"><i data-lucide="plus" size="16"></i> Add card</a></div>
       <div id="card-list" class="card-list"></div>
     </section>
 
@@ -94,12 +198,40 @@
     </section>
   </main>
 </div>
+
+<dialog class="delete-card-dialog" id="delete-card-dialog" aria-labelledby="delete-card-title">
+  <div class="delete-card-panel">
+    <div class="delete-card-heading">
+      <span class="delete-warning-icon"><i data-lucide="triangle-alert" size="23"></i></span>
+      <div>
+        <h2 id="delete-card-title">Permanently delete this card?</h2>
+        <p class="muted">This cannot be undone. The public link will stop working immediately.</p>
+      </div>
+    </div>
+
+    <div class="delete-card-summary">
+      <strong id="delete-card-name">Selected card</strong>
+      <span class="muted">Social links, services, products, leads, views, events, card links, and domain requests connected to this card will also be removed.</span>
+    </div>
+
+    <label class="delete-confirm-label" for="delete-confirm-input">Type <strong>DELETE</strong> to confirm</label>
+    <input class="delete-confirm-input" id="delete-confirm-input" type="text" autocomplete="off" spellcheck="false" placeholder="DELETE">
+
+    <div class="delete-dialog-actions">
+      <button class="btn btn-light" type="button" id="cancel-delete-card">Keep card</button>
+      <button class="btn btn-danger" type="button" id="confirm-delete-card" disabled>
+        <i data-lucide="trash-2" size="16"></i> Delete permanently
+      </button>
+    </div>
+  </div>
+</dialog>
+
 <div id="toast" class="toast"></div>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js?v=20260722-4"></script>
 <script src="js/common.js?v=20260722-5"></script>
 <script src="js/billing.js?v=20260722-7"></script>
-<script src="js/dashboard.js?v=20260722-7"></script>
+<script src="js/dashboard.js?v=20260722-8"></script>
 </body>
 </html>
