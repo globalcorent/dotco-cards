@@ -65,6 +65,8 @@ function value(name) {
 }
 
 function initializeNewCard() {
+  const suggestedName = user?.user_metadata?.full_name || user?.email?.split('@')?.[0] || '';
+  if (suggestedName && field('full_name') && !field('full_name').value) field('full_name').value = suggestedName;
   field('primary_color').value = '#5b5cf0';
   field('secondary_color').value = '#9b5de5';
   field('background_color').value = '#ffffff';
@@ -144,6 +146,18 @@ function wireEvents() {
   document.getElementById('add-social').addEventListener('click', () => addSocialRow());
   document.getElementById('add-service').addEventListener('click', () => addServiceRow());
   document.getElementById('add-product').addEventListener('click', () => addProductRow());
+  document.getElementById('save-now-button')?.addEventListener('click', async event => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      await flushSave();
+      await save({ silent: false });
+    } catch (_) {
+      // performSave already shows the useful error.
+    } finally {
+      button.disabled = false;
+    }
+  });
   document.getElementById('publish-button').addEventListener('click', togglePublish);
   document.getElementById('panel-publish-button').addEventListener('click', togglePublish);
   document.getElementById('copy-card-link').addEventListener('click', copyCardLink);
@@ -559,12 +573,15 @@ function scheduleSave() {
   setSaveState('saving', 'Unsaved changes');
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    save({ silent: true });
+    save({ silent: true }).catch(() => {
+      // Keep the editor usable after a failed background save.
+    });
   }, 700);
 }
 
 function save(options = {}) {
-  saveChain = saveChain.then(() => performSave(options));
+  // A failed save must never poison every later autosave or Publish click.
+  saveChain = saveChain.catch(() => undefined).then(() => performSave(options));
   return saveChain;
 }
 
@@ -578,6 +595,10 @@ async function performSave({ silent = false } = {}) {
       else payload[name] = raw === '' ? null : raw;
     });
     payload.profile_image_url = profileUrl || null;
+    if (!payload.full_name) {
+      payload.full_name = user?.user_metadata?.full_name || user?.email?.split('@')?.[0] || 'Untitled Card';
+      if (field('full_name') && !field('full_name').value) field('full_name').value = payload.full_name;
+    }
     if (!payload.slug) payload.slug = `${slugify(payload.full_name || 'card')}-${Math.random().toString(36).slice(2, 6)}`;
 
     const result = currentId
@@ -664,24 +685,35 @@ async function flushSave() {
     saveTimer = null;
     await save({ silent: true });
   } else {
-    await saveChain;
+    await saveChain.catch(() => undefined);
   }
 }
 
-async function togglePublish() {
-  await flushSave();
-  if (!currentId) await save({ silent: true });
-  if (!currentId) return;
-  const active = ['active', 'trialing', 'past_due'].includes(subscription?.status);
-  if (!active) {
-    document.getElementById('upgrade-dialog').showModal();
-    return;
+async function togglePublish(event) {
+  const previousStatus = value('status') || 'draft';
+  const buttons = [document.getElementById('publish-button'), document.getElementById('panel-publish-button')].filter(Boolean);
+  buttons.forEach(button => button.disabled = true);
+  try {
+    await flushSave();
+    if (!currentId) await save({ silent: true });
+    if (!currentId) throw new Error('Your card could not be created. Add your name and try again.');
+    const active = ['active', 'trialing', 'past_due'].includes(subscription?.status);
+    if (!active) {
+      document.getElementById('upgrade-dialog').showModal();
+      return;
+    }
+    const next = previousStatus === 'published' ? 'draft' : 'published';
+    field('status').value = next;
+    await save({ silent: true });
+    render();
+    toast(next === 'published' ? 'Your card is live' : 'Card returned to draft');
+  } catch (error) {
+    field('status').value = previousStatus;
+    render();
+    toast(error?.message || 'Unable to publish. Your changes are still in the editor.');
+  } finally {
+    buttons.forEach(button => button.disabled = false);
   }
-  const next = value('status') === 'published' ? 'draft' : 'published';
-  field('status').value = next;
-  await save({ silent: true });
-  render();
-  toast(next === 'published' ? 'Your card is live' : 'Card returned to draft');
 }
 
 function updatePublicControls() {

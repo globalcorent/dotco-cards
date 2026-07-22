@@ -1,0 +1,6 @@
+DOTCO CARDS SAVE + PUBLISH HOTFIX
+
+Upload editor.html and the js folder to the root of the dotco-cards GitHub repository.
+Replace the existing files.
+Commit message: Fix autosave and publishing queue
+Then wait for GitHub Pages and hard-refresh with Ctrl+Shift+R.
