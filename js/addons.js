@@ -137,10 +137,11 @@ function renderAddons() {
     const monthlyEquivalent = interval === 'year' ? Math.round(priceCents / 12) : priceCents;
     const quantity = Math.max(1, Number(row?.quantity || 1));
     const statusClass = included ? 'included' : active ? 'active' : '';
+    const configure = configureHref(def);
     let controls = '';
 
     if (included) {
-      controls = `<div class="addon-included"><i data-lucide="badge-check" size="18"></i> Included with ${escapeHtml(addonPlan.name)}</div>`;
+      controls = `<div class="addon-ready-row"><div class="addon-included"><i data-lucide="badge-check" size="18"></i> Included with ${escapeHtml(addonPlan.name)}</div>${configure ? `<a class="btn btn-light btn-sm" href="${configure}">Configure</a>` : ''}</div>`;
     } else if (!activePlan) {
       controls = `<a class="btn btn-primary btn-block" href="pricing.html">Choose a plan</a>`;
     } else if (active && def.is_quantity) {
@@ -151,10 +152,11 @@ function renderAddons() {
           <button type="button" data-qty-change="1" data-addon-key="${def.addon_key}" aria-label="Increase quantity"><i data-lucide="plus" size="15"></i></button>
         </div>
         <button class="btn btn-primary btn-sm" type="button" data-update-addon="${def.addon_key}">Update</button>
+        <a class="btn btn-light btn-sm" href="${configure || 'editor.html'}">Create card</a>
         <button class="btn btn-ghost btn-sm danger-text" type="button" data-remove-addon="${def.addon_key}">Remove</button>
       </div>`;
     } else if (active) {
-      controls = `<div class="addon-active-actions"><span><i data-lucide="circle-check" size="17"></i> Active</span><button class="btn btn-ghost btn-sm danger-text" type="button" data-remove-addon="${def.addon_key}">Remove</button></div>`;
+      controls = `<div class="addon-active-actions"><span><i data-lucide="circle-check" size="17"></i> Active now</span><div>${configure ? `<a class="btn btn-light btn-sm" href="${configure}">Configure</a>` : ''}<button class="btn btn-ghost btn-sm danger-text" type="button" data-remove-addon="${def.addon_key}">Remove</button></div></div>`;
     } else {
       controls = `<button class="btn btn-primary btn-block" type="button" data-add-addon="${def.addon_key}"><i data-lucide="plus" size="17"></i> Add to ${escapeHtml(addonPlan.name)}</button>`;
     }
@@ -171,7 +173,7 @@ function renderAddons() {
       </div>
       <div class="addon-price-row">
         <div><strong>${formatMoney(monthlyEquivalent)}</strong><span>/month${def.is_quantity ? ' each' : ''}</span></div>
-        <small>${interval === 'year' ? `${formatMoney(priceCents)} billed yearly` : 'Added to your monthly subscription'}</small>
+        <small>${included ? `Included in ${escapeHtml(addonPlan.name)}` : active ? 'Active on your subscription' : interval === 'year' ? `${formatMoney(priceCents)} billed yearly` : 'Added to your monthly subscription'}</small>
       </div>
       <div class="addon-controls">${controls}</div>
     </article>`;
@@ -192,6 +194,22 @@ function renderAddons() {
   }));
 
   if (window.lucide) lucide.createIcons();
+}
+
+function configureHref(definition) {
+  const firstCard = addonCards[0];
+  const editorBase = firstCard ? `editor.html?id=${encodeURIComponent(firstCard.id)}` : 'editor.html';
+  const joiner = editorBase.includes('?') ? '&' : '?';
+  const map = {
+    advanced_analytics: 'analytics.html',
+    premium_templates: `${editorBase}${joiner}tab=design&feature=premium_templates`,
+    appointment_booking: `${editorBase}${joiner}tab=tools&feature=appointment_booking`,
+    lead_capture: `${editorBase}${joiner}tab=tools&feature=lead_capture`,
+    product_showcase: `${editorBase}${joiner}tab=tools&feature=product_showcase`,
+    extra_card: 'editor.html',
+    custom_domain: '#domain-workspace'
+  };
+  return map[definition?.addon_key] || '';
 }
 
 async function changeAddon(addonKey, action, quantity = 1, trigger = null) {
@@ -216,7 +234,25 @@ async function changeAddon(addonKey, action, quantity = 1, trigger = null) {
       setTimeout(() => location.href = data.paymentUrl, 450);
       return;
     }
-    setTimeout(() => location.reload(), 700);
+
+    const existing = addonRows.find(row => row.addon_key === addonKey);
+    const nextStatus = data.active === false || action === 'remove' ? 'canceled' : 'active';
+    if (existing) {
+      existing.status = nextStatus;
+      existing.quantity = Math.max(1, Number(data.quantity || quantity || 1));
+    } else {
+      addonRows.push({ addon_key: addonKey, status: nextStatus, quantity: Math.max(1, Number(data.quantity || quantity || 1)) });
+    }
+    renderSubscriptionSummary();
+    renderAddons();
+    renderDomainWorkspace();
+    setButtonBusy(trigger, false);
+
+    const configure = configureHref(definition);
+    if (configure && action !== 'remove' && !configure.startsWith('#')) {
+      const card = document.querySelector(`.addon-card[data-category="${definition.category}"]`);
+      card?.classList.add('addon-just-activated');
+    }
   } catch (error) {
     toast(error.message);
     setButtonBusy(trigger, false);

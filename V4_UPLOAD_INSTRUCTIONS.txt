@@ -1,0 +1,11 @@
+DOTCO CARDS V4 FRONTEND UPLOAD
+
+1. Open https://github.com/globalcorent/dotco-cards
+2. Choose Add file > Upload files.
+3. Upload the contents of the V4 patch ZIP, preserving the css and js folders.
+4. Allow GitHub to replace existing files.
+5. Commit with: Fix templates, Agency upgrades, and add-on visibility
+6. Wait 2-5 minutes for GitHub Pages.
+7. Open the site and press Ctrl + Shift + R once.
+
+The Supabase template data and manage-plan Edge Function are already live.

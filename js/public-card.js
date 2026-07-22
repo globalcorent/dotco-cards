@@ -52,15 +52,23 @@ window.track = async function (type, targetId = null, metadata = {}) {
 function renderCard(cardData, links, services, products, isPreview) {
   document.title = cardData.seo_title || `${cardData.full_name} | Digital Business Card`;
   const card = document.getElementById('card');
+  const layout = safePublicLayout(cardData.card_layout || 'classic');
+  const colorMode = cardData.color_mode === 'dark' ? 'dark' : 'light';
+  const primary = cardData.primary_color || '#5b5cf0';
+  const secondary = cardData.secondary_color || '#9b5de5';
+  const buttonColor = cardData.button_color || primary;
+  const buttonTextColor = cardData.button_text_color || '#ffffff';
+  card.className = `public-card public-layout-${layout} public-mode-${colorMode}`;
   card.style.background = cardData.background_color || '#fff';
   card.style.color = cardData.text_color || '#111827';
   card.style.fontFamily = cardData.font_family || 'DM Sans';
-  card.style.setProperty('--card-primary', cardData.primary_color || '#5b5cf0');
-  card.style.setProperty('--card-secondary', cardData.secondary_color || '#9b5de5');
+  card.style.setProperty('--card-primary', primary);
+  card.style.setProperty('--card-secondary', secondary);
+  card.style.setProperty('--card-button', buttonColor);
+  card.style.setProperty('--card-button-text', buttonTextColor);
   card.style.setProperty('--card-radius', `${cardData.border_radius || 16}px`);
+  card.dataset.buttonStyle = cardData.button_style || 'filled';
 
-  const primary = cardData.primary_color || '#5b5cf0';
-  const secondary = cardData.secondary_color || '#9b5de5';
   document.getElementById('public-cover').style.background = cardData.gradient_background || `linear-gradient(135deg, ${primary}, ${secondary})`;
   document.querySelector('meta[name="theme-color"]').content = primary;
 
@@ -103,6 +111,11 @@ function renderCard(cardData, links, services, products, isPreview) {
   if (window.lucide) lucide.createIcons();
 }
 
+function safePublicLayout(value) {
+  const layout = String(value || 'classic').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  return ['classic', 'executive', 'minimal', 'spotlight', 'luxe', 'split', 'bold', 'soft', 'playful', 'editorial'].includes(layout) ? layout : 'classic';
+}
+
 function renderActions(cardData, primary) {
   const actions = [
     { label: 'Call', icon: 'phone', href: cardData.phone && `tel:${cardData.phone}`, event: 'phone_click' },
@@ -113,7 +126,7 @@ function renderActions(cardData, primary) {
   ].filter(action => action.href).slice(0, 4);
 
   const area = document.getElementById('actions');
-  area.innerHTML = actions.map(action => `<a class="action-tile" href="${escapeHtml(action.href)}" target="${action.href.startsWith('http') ? '_blank' : '_self'}" rel="noopener" data-event="${action.event}" style="color:${primary};background:${primary}14"><i data-lucide="${action.icon}" size="19"></i><span>${action.label}</span></a>`).join('');
+  area.innerHTML = actions.map(action => `<a class="action-tile" href="${escapeHtml(action.href)}" target="${action.href.startsWith('http') ? '_blank' : '_self'}" rel="noopener" data-event="${action.event}" style="color:var(--card-primary);background:color-mix(in srgb,var(--card-primary) 9%,transparent)"><i data-lucide="${action.icon}" size="19"></i><span>${action.label}</span></a>`).join('');
   area.querySelectorAll('[data-event]').forEach(link => link.addEventListener('click', () => track(link.dataset.event)));
 }
 

@@ -14,8 +14,9 @@ let products = [];
 
 const fieldNames = [
   'full_name', 'job_title', 'company_name', 'biography', 'phone', 'email', 'website', 'business_address', 'headline',
-  'primary_color', 'secondary_color', 'background_color', 'text_color', 'font_family', 'button_style', 'profile_image_shape',
-  'border_radius', 'slug', 'template_id', 'profile_image_url', 'booking_url', 'payment_url', 'services_enabled',
+  'primary_color', 'secondary_color', 'background_color', 'text_color', 'button_color', 'button_text_color',
+  'font_family', 'button_style', 'profile_image_shape', 'border_radius', 'card_layout', 'gradient_background', 'color_mode',
+  'slug', 'template_id', 'profile_image_url', 'booking_url', 'payment_url', 'services_enabled',
   'products_enabled', 'booking_enabled', 'lead_form_enabled'
 ];
 
@@ -49,6 +50,7 @@ const fieldNames = [
   wireEvents();
   render();
   updateCompletion();
+  handleEditorDeepLink(params);
   if (window.lucide) lucide.createIcons();
 })();
 
@@ -67,6 +69,11 @@ function initializeNewCard() {
   field('secondary_color').value = '#9b5de5';
   field('background_color').value = '#ffffff';
   field('text_color').value = '#111827';
+  field('button_color').value = '#5b5cf0';
+  field('button_text_color').value = '#ffffff';
+  field('card_layout').value = 'classic';
+  field('gradient_background').value = 'linear-gradient(135deg,#5b5cf0,#9b5de5)';
+  field('color_mode').value = 'light';
   field('status').value = 'draft';
   field('services_enabled').checked = true;
   field('products_enabled').checked = false;
@@ -156,10 +163,18 @@ function wireEvents() {
     field('secondary_color').value = secondary;
     field('background_color').value = background;
     field('text_color').value = text;
+    field('button_color').value = primary;
+    field('gradient_background').value = `linear-gradient(135deg,${primary},${secondary})`;
     document.querySelectorAll('.color-preset').forEach(item => item.classList.remove('active'));
     button.classList.add('active');
+    document.getElementById('template-selected-summary').textContent = 'Customized';
     render();
     scheduleSave();
+  }));
+  ['primary_color', 'secondary_color'].forEach(name => field(name)?.addEventListener('input', () => {
+    field('gradient_background').value = `linear-gradient(135deg,${value('primary_color')},${value('secondary_color')})`;
+    if (name === 'primary_color') field('button_color').value = value('primary_color');
+    document.getElementById('template-selected-summary').textContent = 'Customized';
   }));
   document.querySelector('[data-close-dialog]').addEventListener('click', () => document.getElementById('upgrade-dialog').close());
 }
@@ -167,6 +182,36 @@ function wireEvents() {
 function openTab(name) {
   document.querySelectorAll('.editor-tab').forEach(item => item.classList.toggle('active', item.dataset.tab === name));
   document.querySelectorAll('.editor-panel').forEach(item => item.classList.toggle('active', item.dataset.panel === name));
+}
+
+function handleEditorDeepLink(params) {
+  const tab = params.get('tab');
+  const feature = params.get('feature');
+  if (tab) openTab(tab);
+  if (!feature) return;
+
+  if (feature === 'premium_templates') {
+    openTab('design');
+    document.getElementById('template-grid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  openTab('tools');
+  const card = document.querySelector(`[data-entitlement-card="${feature}"]`);
+  if (card) {
+    card.classList.add('feature-focus');
+    setTimeout(() => card.classList.remove('feature-focus'), 2600);
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  const fieldName = feature === 'appointment_booking' ? 'booking_enabled' : feature === 'lead_capture' ? 'lead_form_enabled' : feature === 'product_showcase' ? 'products_enabled' : null;
+  const toggle = fieldName && field(fieldName);
+  if (toggle && hasEntitlement(feature)) {
+    toggle.checked = true;
+    render();
+    scheduleSave();
+  }
+  if (feature === 'appointment_booking') field('booking_url')?.focus();
 }
 
 function render() {
@@ -184,25 +229,35 @@ function render() {
   const secondary = value('secondary_color') || '#9b5de5';
   const background = value('background_color') || '#ffffff';
   const text = value('text_color') || '#111827';
-  document.getElementById('preview-cover').style.background = `linear-gradient(135deg,${primary},${secondary})`;
+  const buttonColor = value('button_color') || primary;
+  const buttonTextColor = value('button_text_color') || '#ffffff';
+  const layout = safeLayout(value('card_layout') || 'classic');
+  const gradient = value('gradient_background') || `linear-gradient(135deg,${primary},${secondary})`;
+  document.getElementById('preview-cover').style.background = gradient;
   const phone = document.getElementById('phone-preview');
+  phone.className = `phone preview-layout-${layout} preview-mode-${value('color_mode') || 'light'}`;
   phone.style.background = background;
   phone.style.color = text;
   phone.style.fontFamily = value('font_family') || 'DM Sans';
+  phone.style.setProperty('--preview-primary', primary);
+  phone.style.setProperty('--preview-secondary', secondary);
+  phone.style.setProperty('--preview-button', buttonColor);
+  phone.style.setProperty('--preview-button-text', buttonTextColor);
+  phone.style.setProperty('--preview-radius', `${value('border_radius') || 16}px`);
   document.querySelectorAll('.preview-action').forEach(button => {
     button.style.borderRadius = `${value('border_radius') || 16}px`;
     if (value('button_style') === 'outline') {
       button.style.background = 'transparent';
-      button.style.border = `1px solid ${primary}`;
-      button.style.color = primary;
+      button.style.border = `1px solid ${buttonColor}`;
+      button.style.color = buttonColor;
     } else if (value('button_style') === 'soft') {
-      button.style.background = `${primary}20`;
+      button.style.background = `${buttonColor}20`;
       button.style.border = '0';
-      button.style.color = primary;
+      button.style.color = buttonColor;
     } else {
-      button.style.background = primary;
+      button.style.background = buttonColor;
       button.style.border = '0';
-      button.style.color = '#fff';
+      button.style.color = buttonTextColor;
     }
   });
 
@@ -263,27 +318,65 @@ async function uploadPhoto(event) {
 function renderTemplates() {
   const allowed = hasEntitlement('premium_templates');
   const grid = document.getElementById('template-grid');
-  grid.innerHTML = templates.map(template => `<button type="button" class="template-card ${String(value('template_id') || '') === String(template.id) ? 'active' : ''} ${template.is_premium && !allowed ? 'locked' : ''}" data-template="${template.id}" data-premium="${template.is_premium}"><div class="template-preview" style="background:${templateGradient(template.template_key)}"></div><strong>${escapeHtml(template.name)}</strong>${template.is_premium ? `<span class="template-lock"><i data-lucide="${allowed ? 'sparkles' : 'lock'}" size="14"></i></span>` : ''}</button>`).join('');
+  if (!templates.length) {
+    grid.innerHTML = '<div class="builder-empty" style="grid-column:1/-1">No templates are available.</div>';
+    return;
+  }
+
+  const selectedTemplate = templates.find(template => String(template.id) === String(value('template_id') || ''));
+  document.getElementById('template-selected-summary').textContent = selectedTemplate?.name || 'Custom design';
+
+  grid.innerHTML = templates.map(template => {
+    const config = template.configuration || {};
+    const layout = safeLayout(config.layout || 'classic');
+    const gradient = config.gradient_background || `linear-gradient(135deg,${config.primary_color || '#5b5cf0'},${config.secondary_color || '#9b5de5'})`;
+    const active = String(value('template_id') || '') === String(template.id);
+    const locked = template.is_premium && !allowed;
+    return `<button type="button" class="template-card ${active ? 'active' : ''} ${locked ? 'locked' : ''}" data-template="${template.id}" data-premium="${template.is_premium}">
+      <div class="template-mini mini-layout-${layout}" style="--mini-gradient:${escapeHtml(gradient)};--mini-bg:${escapeHtml(config.background_color || '#ffffff')};--mini-text:${escapeHtml(config.text_color || '#111827')};--mini-accent:${escapeHtml(config.button_color || config.primary_color || '#5b5cf0')}">
+        <div class="template-mini-cover"></div>
+        <span class="template-mini-avatar"></span>
+        <div class="template-mini-copy"><span></span><span></span><span></span></div>
+        <div class="template-mini-actions"><span></span><span></span><span></span></div>
+      </div>
+      <div class="template-card-label"><span><strong>${escapeHtml(template.name)}</strong><small>${escapeHtml(titleCase(template.category || 'design'))}</small></span>${template.is_premium ? `<em>${locked ? 'Pro' : 'Premium'}</em>` : '<em class="free">Free</em>'}</div>
+      ${locked ? '<span class="template-lock"><i data-lucide="lock" size="14"></i></span>' : ''}
+    </button>`;
+  }).join('');
+
   grid.querySelectorAll('.template-card').forEach(button => button.addEventListener('click', () => {
+    const template = templates.find(item => String(item.id) === button.dataset.template);
+    if (!template) return;
     if (button.dataset.premium === 'true' && !allowed) {
-      toast('Activate Premium Templates from Add-ons, or upgrade to Pro');
+      toast('Premium templates are included with Pro and Agency');
+      location.href = dotcoUrl('pricing.html');
       return;
     }
-    field('template_id').value = button.dataset.template;
-    grid.querySelectorAll('.template-card').forEach(item => item.classList.remove('active'));
-    button.classList.add('active');
-    scheduleSave();
+    applyTemplate(template);
   }));
   if (window.lucide) lucide.createIcons();
 }
 
-function templateGradient(key) {
-  const map = {
-    corporate: 'linear-gradient(135deg,#172554,#3b82f6)', minimal: 'linear-gradient(135deg,#f8fafc,#dbeafe)', creative: 'linear-gradient(135deg,#7c3aed,#ec4899)', luxury: 'linear-gradient(135deg,#111827,#b7791f)',
-    'real-estate': 'linear-gradient(135deg,#0f766e,#2dd4bf)', beauty: 'linear-gradient(135deg,#be185d,#f9a8d4)', healthcare: 'linear-gradient(135deg,#0369a1,#38bdf8)', restaurant: 'linear-gradient(135deg,#7f1d1d,#f59e0b)',
-    contractor: 'linear-gradient(135deg,#292524,#f97316)', automotive: 'linear-gradient(135deg,#111827,#ef4444)', daycare: 'linear-gradient(135deg,#0ea5e9,#f9a8d4)', 'credit-repair': 'linear-gradient(135deg,#166534,#22c55e)'
-  };
-  return map[key] || 'linear-gradient(135deg,#5b5cf0,#9b5de5)';
+function applyTemplate(template) {
+  const config = template.configuration || {};
+  const keys = ['primary_color', 'secondary_color', 'background_color', 'text_color', 'button_color', 'button_text_color', 'font_family', 'button_style', 'profile_image_shape', 'border_radius', 'color_mode', 'gradient_background'];
+  keys.forEach(key => {
+    if (config[key] === undefined || config[key] === null || !field(key)) return;
+    field(key).value = String(config[key]);
+  });
+  field('card_layout').value = safeLayout(config.layout || 'classic');
+  field('template_id').value = template.id;
+  document.querySelectorAll('.template-card').forEach(item => item.classList.toggle('active', item.dataset.template === String(template.id)));
+  document.querySelectorAll('.color-preset').forEach(item => item.classList.remove('active'));
+  document.getElementById('template-selected-summary').textContent = template.name;
+  render();
+  scheduleSave();
+  toast(`${template.name} design applied`);
+}
+
+function safeLayout(value) {
+  const layout = String(value || 'classic').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  return ['classic', 'executive', 'minimal', 'spotlight', 'luxe', 'split', 'bold', 'soft', 'playful', 'editorial'].includes(layout) ? layout : 'classic';
 }
 
 function addSocialRow(link = { platform: 'instagram', url: '' }) {
@@ -428,6 +521,14 @@ function applyEntitlements() {
     }
   });
   document.getElementById('add-product').disabled = !hasEntitlement('product_showcase');
+
+  const enabledTools = addonDefinitions.filter(definition => hasEntitlement(definition.entitlement_key));
+  const summary = document.getElementById('editor-entitlement-summary');
+  if (summary) {
+    summary.innerHTML = enabledTools.length
+      ? `<div><strong>Your active features</strong><span>${enabledTools.map(item => escapeHtml(item.name)).join(' · ')}</span></div><a class="btn btn-light btn-sm" href="addons.html">View marketplace</a>`
+      : '<div><strong>Core card tools</strong><span>Add booking, leads, products, domains, and more from the marketplace.</span></div><a class="btn btn-primary btn-sm" href="addons.html">Browse add-ons</a>';
+  }
   if (window.lucide) lucide.createIcons();
 }
 
